@@ -1,0 +1,38 @@
+{
+  "enabledMcpjsonServers": [
+    "elevenlabs"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/check_setup.py)",
+      "Bash(python3 processors/transcribe/prepare.py *)",
+      "Bash(python3 processors/transcribe/finalize.py *)",
+      "Bash(ffprobe *)",
+      "mcp__elevenlabs__check_subscription",
+      "mcp__elevenlabs__list_models",
+      "mcp__elevenlabs__search_voices",
+      "mcp__elevenlabs__list_agents"
+    ],
+    "ask": [
+      "mcp__elevenlabs__speech_to_text",
+      "Read(./output/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "mcp__elevenlabs__text_to_speech",
+      "mcp__elevenlabs__text_to_sound_effects",
+      "mcp__elevenlabs__voice_clone",
+      "mcp__elevenlabs__isolate_audio",
+      "mcp__elevenlabs__create_agent",
+      "mcp__elevenlabs__add_knowledge_base_to_agent",
+      "mcp__elevenlabs__simulate_conversation",
+      "mcp__elevenlabs__speech_to_speech",
+      "mcp__elevenlabs__text_to_voice",
+      "mcp__elevenlabs__create_voice_from_preview",
+      "mcp__elevenlabs__make_outbound_call",
+      "mcp__elevenlabs__compose_music",
+      "mcp__elevenlabs__video_to_music",
+      "mcp__elevenlabs__upload_music_for_inpainting"
+    ]
+  }
+}

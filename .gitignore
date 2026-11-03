@@ -1,0 +1,11 @@
+.env
+__pycache__/
+.ruff_cache/
+
+# Media, temporary files and results never go into git.
+input/*
+work/*
+output/*
+!input/.gitkeep
+!work/.gitkeep
+!output/.gitkeep
