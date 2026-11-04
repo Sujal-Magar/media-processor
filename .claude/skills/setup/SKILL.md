@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Check that ffmpeg, uvx, API keys and the MCP servers the processors use (currently ElevenLabs) are ready. Free; use when the user asks whether things are set up or when provider tools are missing.
+description: Check that ffmpeg, uvx, the API keys and the providers the processors use (ElevenLabs MCP server, OpenAI vision model) are ready. Free; use when the user asks whether things are set up or when provider tools are missing.
 ---
 
 # Setup check
@@ -13,6 +13,11 @@ Nothing here costs money.
    - ELEVENLABS_API_KEY: `cp .env.example .env`, then put the key from
      https://elevenlabs.io/app/settings/api-keys after `ELEVENLABS_API_KEY=`. Do not ask the
      user to paste the key into the chat, and never read `.env`.
+   - OPENAI_API_KEY: the same, with a key from https://platform.openai.com/api-keys after
+     `OPENAI_API_KEY=`.
+   - OpenAI model access: the script asked OpenAI (free) whether the key can use the
+     vision model. `invalid_api_key` = wrong key; `model_not_found` = set
+     `OPENAI_VISION_MODEL` in `.env` to a model the key can use.
 
 2. Check that the `mcp__elevenlabs__*` tools are available. If they are not:
    - the key may be missing (step 1), or the server failed to start;
@@ -48,4 +53,5 @@ Nothing here costs money.
    key, then restart Claude Code. Only Speech to Text is required; the read permissions just
    make `/setup` more informative.
 
-End with one line per processor (currently `/transcribe`): ready, or what is missing.
+End with one line each for `/transcribe` (ElevenLabs key and MCP tools), `/tag-visuals`
+(OpenAI key and model access) and `/process-video` (both): ready, or what is missing.

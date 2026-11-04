@@ -7,6 +7,8 @@
       "Bash(python3 scripts/check_setup.py)",
       "Bash(python3 processors/transcribe/prepare.py *)",
       "Bash(python3 processors/transcribe/finalize.py *)",
+      "Bash(python3 processors/tag-visuals/prepare.py *)",
+      "Bash(python3 processors/tag-visuals/finalize.py *)",
       "Bash(ffprobe *)",
       "mcp__elevenlabs__check_subscription",
       "mcp__elevenlabs__list_models",
@@ -15,6 +17,7 @@
     ],
     "ask": [
       "mcp__elevenlabs__speech_to_text",
+      "Bash(python3 processors/tag-visuals/tag.py *)",
       "Read(./output/**)"
     ],
     "deny": [
