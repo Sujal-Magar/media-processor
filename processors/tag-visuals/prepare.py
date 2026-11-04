@@ -21,9 +21,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
-from lib.media import duration_of, ffmpeg, probe, streams_of  # noqa: E402
-from lib.openai_api import DEFAULT_VISION_MODEL, setting  # noqa: E402
-from lib.workspace import (  # noqa: E402
+from lib.media import duration_of, ffmpeg, probe, streams_of
+from lib.openai_api import DEFAULT_VISION_MODEL, setting
+from lib.workspace import (
     OUTPUT,
     fail,
     new_job_dir,

@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
-from lib.media import (  # noqa: E402
+from lib.media import (
     audio_tracks,
     choose_track,
     cut_audio,
@@ -28,7 +28,7 @@ from lib.media import (  # noqa: E402
     loudness,
     probe,
 )
-from lib.workspace import (  # noqa: E402
+from lib.workspace import (
     fail,
     new_job_dir,
     now_iso,

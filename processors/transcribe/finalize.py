@@ -20,7 +20,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
-from lib.workspace import (  # noqa: E402
+from lib.workspace import (
     fail,
     fmt_time,
     is_job_dir,

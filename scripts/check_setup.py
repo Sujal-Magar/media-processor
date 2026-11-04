@@ -19,8 +19,8 @@ from lib.openai_api import (
     OpenAIError,
     request,
     setting,
-)  # noqa: E402
-from lib.workspace import WORK, dotenv_value  # noqa: E402
+)
+from lib.workspace import WORK, dotenv_value
 
 
 def key_source(name: str) -> str | None:

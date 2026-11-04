@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root, for `lib`
 
-from lib.workspace import WORK, dotenv_value  # noqa: E402
+from lib.workspace import WORK, dotenv_value
 
 # The skills were written against this version's tool parameters; bump deliberately.
 PACKAGE = "elevenlabs-mcp==0.12.2"

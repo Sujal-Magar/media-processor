@@ -20,7 +20,7 @@ def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     """Run a command as an argument list (never through a shell)."""
     try:
         return subprocess.run(
-            args, capture_output=True, text=True, stdin=subprocess.DEVNULL
+            args, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False
         )
     except FileNotFoundError:
         fail(f"{args[0]} is not installed (sudo pacman -S ffmpeg)")

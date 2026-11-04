@@ -27,16 +27,16 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
-from finalize import (  # noqa: E402  (same folder)
+from finalize import (
     finalize,
     load_results,
     needs_text_pass,
     text_runs,
 )
 
-from lib.media import ffmpeg  # noqa: E402
-from lib.openai_api import OpenAIError, output_text, request, setting  # noqa: E402
-from lib.workspace import fail, is_job_dir, print_json, write_json  # noqa: E402
+from lib.media import ffmpeg
+from lib.openai_api import OpenAIError, output_text, request, setting
+from lib.workspace import fail, is_job_dir, print_json, write_json
 
 # Pass 2 crops full-resolution frames: the 768 px tagging frames are too small for fine print.
 TEXT_FRAME_WIDTH = 2048

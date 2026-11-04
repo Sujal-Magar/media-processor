@@ -60,7 +60,11 @@ def output_dir_for(processor: str, source: Path, digest: str) -> Path:
 
 
 def new_job_dir(processor: str, source: Path) -> Path:
-    job_dir = WORK / processor / f"{safe_name(source)}-{datetime.now():%Y%m%d-%H%M%S}"
+    job_dir = (
+        WORK
+        / processor
+        / f"{safe_name(source)}-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}"
+    )
     job_dir.mkdir(parents=True, mode=0o700)
     return job_dir
 

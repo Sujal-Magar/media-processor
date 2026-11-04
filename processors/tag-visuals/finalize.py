@@ -22,7 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
-from lib.workspace import (  # noqa: E402
+from lib.workspace import (
     fail,
     fmt_time,
     is_job_dir,
@@ -179,8 +179,7 @@ def aggregate_text(
 
 
 def short_time(seconds: float) -> str:
-    text = fmt_time(seconds)
-    return text[3:] if text.startswith("00:") else text
+    return fmt_time(seconds).removeprefix("00:")
 
 
 def when(ranges: list[list[float]]) -> str:

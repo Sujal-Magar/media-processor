@@ -56,9 +56,7 @@ def request(
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(
-            req, timeout=timeout
-        ) as response:  # noqa: S310 - checked above
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
         try:
