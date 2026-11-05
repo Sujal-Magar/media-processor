@@ -2,7 +2,7 @@
 """Check that the tools and keys the processors need are installed. Costs nothing.
 
 With an OpenAI key present, it also asks OpenAI whether the key can use the vision model
-(and the topic model, if set apart; a free model lookup, no generation).
+(and the topic and copy models, if set apart; a free model lookup, no generation).
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root, for `
 from lib.openai_api import (
     DEFAULT_VISION_MODEL,
     OpenAIError,
+    copy_model,
     request,
     setting,
     topic_model,
@@ -62,7 +63,7 @@ def main() -> None:
         tool_check("uvx", "sudo pacman -S uv"),
         ("work/ writable", os.access(WORK, os.W_OK), str(WORK)),
         key_check("ELEVENLABS_API_KEY", "needed by /transcribe"),
-        key_check("OPENAI_API_KEY", "needed by /tag-visuals and /tag-topics"),
+        key_check("OPENAI_API_KEY", "needed by /tag-visuals, /tag-topics, /generate-copy"),
     ]
     if key_source("OPENAI_API_KEY"):
         vision = (
@@ -71,6 +72,8 @@ def main() -> None:
         checks.append(openai_model_check(vision, "OpenAI model access"))
         if topic_model() != vision:
             checks.append(openai_model_check(topic_model(), "OpenAI topic model"))
+        if copy_model() not in (vision, topic_model()):
+            checks.append(openai_model_check(copy_model(), "OpenAI copy model"))
     for name, ok, detail in checks:
         print(f"{'ok  ' if ok else 'FAIL'}  {name:<20} {detail}")
     sys.exit(0 if all(ok for _, ok, _ in checks) else 1)

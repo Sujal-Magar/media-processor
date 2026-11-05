@@ -11,6 +11,8 @@
       "Bash(python3 processors/tag-visuals/finalize.py *)",
       "Bash(python3 processors/tag-topics/prepare.py *)",
       "Bash(python3 processors/tag-topics/finalize.py *)",
+      "Bash(python3 processors/generate-copy/prepare.py *)",
+      "Bash(python3 processors/generate-copy/finalize.py *)",
       "Bash(ffprobe *)",
       "mcp__elevenlabs__check_subscription",
       "mcp__elevenlabs__list_models",
@@ -21,6 +23,7 @@
       "mcp__elevenlabs__speech_to_text",
       "Bash(python3 processors/tag-visuals/tag.py *)",
       "Bash(python3 processors/tag-topics/tag.py *)",
+      "Bash(python3 processors/generate-copy/generate.py *)",
       "Read(./output/**)"
     ],
     "deny": [

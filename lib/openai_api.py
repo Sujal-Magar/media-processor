@@ -63,6 +63,15 @@ def topic_model() -> str:
     )
 
 
+def copy_model() -> str:
+    """The model generate-copy uses: OPENAI_COPY_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_COPY_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
 def request(
     method: str,
     path: str,

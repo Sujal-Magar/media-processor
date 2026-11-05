@@ -32,7 +32,8 @@ INSTRUCTIONS = """You tag the files of an organisation's media library by what t
 about, so they can be searched. You get one file as text: what was said (a transcript
 in the language spoken, in sentences S1, S2, ... under the times of their part), tags
 of what its pictures show (V:<tag>), and text read on screen (T1, T2, ...). A file may
-have only some of these.
+have only some of these. It may also come with partly read on-screen text and the
+organisation's own details.
 Give tags in three categories:
 - type: what kind of media this is (student-testimonial, event-recap, advertisement,
   tutorial, interview, certificate)
@@ -40,14 +41,19 @@ Give tags in three categories:
 - entity: specific named things that are not people: countries, cities, schools and
   universities, organisations, programmes, visa subclasses, products (australia,
   subclass-500)
+Spell the organisation's name as the ORGANISATION section gives it, even where the
+speech has it differently: speech-to-text can hear a name as a better-known place.
+Without that section, prefer the spelling on screen (partly read text included) to the
+speech's. Partly read on-screen text is only for checking spellings: never cite it.
 Write every tag in English, lowercase, with words joined by hyphens, whatever language
 was spoken. Use the common English name of a place or institution.
 Never include a person's name, in a tag or in the summary, even when it is said or
 shown on screen; refer to people by their role (the student, the counsellor). SPEAKER 0
 and SPEAKER 1 are labels, not names. Do not guess age, ethnicity or emotions.
-Tag only what the material supports, and give each tag the references it rests on (S1,
-T2, V:office), at most 5 references per tag (the strongest), using only references that
-appear in the material. Cite the sentences that say it. Visual tags alone rarely show
+Tag only what the material supports, and give each tag the references it rests on (for
+example S4, T2, V:office), at most 5 references per tag (the strongest), using only
+references that appear in the material. Cite the sentences that say it, wherever they
+are; do not default to the first sentence. Visual tags alone rarely show
 what a file is about: rely on speech and on-screen text where there is any. When visual
 tags or on-screen text also support a tag (a type tag often rests on what the pictures
 show), cite those too.

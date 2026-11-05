@@ -89,7 +89,7 @@ def inputs_line(inputs: dict[str, Any]) -> str:
     return ", ".join(
         INPUT_NAMES[name] + ("" if record["complete"] else " (incomplete)")
         for name, record in inputs.items()
-        if record
+        if record and name in INPUT_NAMES
     )
 
 

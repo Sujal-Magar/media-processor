@@ -11,7 +11,9 @@ Request: `$ARGUMENTS`
 
 Processor: `processors/tag-topics/`. Steps: prepare (free, local) → tag (paid, one OpenAI
 request, text only, also runs finalize). It reads the results `/transcribe` and
-`/tag-visuals` saved for the same file and never sends the file itself. Do not open
+`/tag-visuals` saved for the same file and never sends the file itself. The
+organisation's own details (`organisation.json`) give the spelling of its name, which
+speech-to-text can mishear. Do not open
 `topics.md` or `topics.json` unless the user asks.
 
 ## 1. Prepare
@@ -27,7 +29,8 @@ Read the JSON it prints:
 - `"status": "already_done"`: tell the user where the output is and that `force` would be
   charged again (the current result then moves to `history/`). Stop.
 - `"status": "outdated"`: the transcript or the visual tags were made again, or one was
-  added, after these topics were made. Offer `force` (charged again). Stop.
+  added, or `organisation.json` changed, after these topics were made. Offer `force`
+  (charged again). Stop.
 - `"status": "ready"`: tell the user which inputs it read (`inputs`), that it is one paid
   request, the model and reasoning effort, and the estimated input tokens
   (`estimated_input_tokens`, rough; reasoning adds output tokens). Quote any `warnings`

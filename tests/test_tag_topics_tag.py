@@ -37,6 +37,11 @@ class PayloadTest(unittest.TestCase):
         self.assertIn("joined by hyphens", tag.INSTRUCTIONS)
         self.assertIn("Never include a person's name", tag.INSTRUCTIONS)
 
+    def test_instructions_do_not_steer_evidence_to_the_first_sentence(self):
+        self.assertNotIn("(S1,", tag.INSTRUCTIONS)
+        self.assertIn("do not default to the first sentence", tag.INSTRUCTIONS)
+        self.assertIn("ORGANISATION section", tag.INSTRUCTIONS)
+
     def test_instructions_ask_to_cite_supporting_pictures_and_text(self):
         self.assertIn("cite those too", tag.INSTRUCTIONS)
 

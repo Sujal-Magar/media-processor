@@ -9,3 +9,6 @@ output/*
 !input/.gitkeep
 !work/.gitkeep
 !output/.gitkeep
+
+# The organisation's own details are client data too (see organisation.example.json).
+organisation.json

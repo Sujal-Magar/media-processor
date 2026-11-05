@@ -5,7 +5,7 @@ from unittest import mock
 
 from helpers import load_script
 
-from lib import openai_api
+from lib import material, openai_api
 
 prepare = load_script("tag-topics", "prepare")
 
@@ -69,12 +69,31 @@ class BuildContextTest(unittest.TestCase):
         self.assertIn("force", warnings[0])
 
     def test_long_transcript_is_cut_with_a_warning(self):
-        with mock.patch.object(prepare, "MAX_SPEECH_CHARS", 10):
+        with mock.patch.object(material, "MAX_SPEECH_CHARS", 10):
             context, refs, warnings = prepare.build_context(TRANSCRIPT, None)
         self.assertIn("I got my v", context)
         self.assertNotIn("six weeks", context)
         self.assertEqual(set(refs), {"S1"})
         self.assertEqual(len(warnings), 1)
+
+
+ORGANISATION = {"name": "Tilicho Consulting Group", "other_names": ["Tilicho"],
+                "website": "tilicho.com.au", "hashtags": [], "note": ""}  # fmt: skip
+
+
+class OrganisationTest(unittest.TestCase):
+    def test_partly_read_text_and_organisation_are_sent_for_spelling(self):
+        context, refs, _ = prepare.build_material(TRANSCRIPT, TAGS, ORGANISATION)
+        self.assertIn('PARTLY READ ON-SCREEN TEXT', context)
+        self.assertIn('- "Prof… Sm…"', context)
+        self.assertIn("Name: Tilicho Consulting Group", context)
+        self.assertNotIn("Guessed line", context)
+        self.assertFalse(any(ref.startswith("P") for ref in refs))  # never cited
+
+    def test_without_organisation_json_a_warning(self):
+        warnings = prepare.input_warnings(TRANSCRIPT, TAGS, None)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("organisation.json", warnings[0])
 
 
 class InputsTest(unittest.TestCase):
@@ -87,11 +106,11 @@ class InputsTest(unittest.TestCase):
         self.assertEqual(prepare.previous_status({"inputs": added}, inputs), "outdated")
 
     def test_warnings_for_missing_and_incomplete_inputs(self):
-        self.assertEqual(len(prepare.input_warnings(None, TAGS)), 1)  # video, no speech
+        self.assertEqual(len(prepare.input_warnings(None, TAGS, ORGANISATION)), 1)  # video, no speech
         photo = {**TAGS, "source": {"kind": "image"}}
-        self.assertEqual(prepare.input_warnings(None, photo), [])
+        self.assertEqual(prepare.input_warnings(None, photo, ORGANISATION), [])
         partial = {**TRANSCRIPT, "complete": False}
-        warnings = prepare.input_warnings(partial, TAGS)
+        warnings = prepare.input_warnings(partial, TAGS, ORGANISATION)
         self.assertEqual(len(warnings), 1)
         self.assertIn("transcript is incomplete", warnings[0])
 

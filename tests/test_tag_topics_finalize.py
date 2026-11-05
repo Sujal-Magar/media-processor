@@ -97,6 +97,13 @@ class FinalizeTest(unittest.TestCase):
         self.assertIn("speech 00:00:00-00:02:00", markdown)
 
 
+class InputsLineTest(unittest.TestCase):
+    def test_organisation_details_are_not_an_input_name(self):
+        inputs = {"transcript": {"created_at": "t1", "complete": False}, "tags": None,
+                  "organisation": {"name": "Tilicho Consulting Group"}}  # fmt: skip
+        self.assertEqual(finalize.inputs_line(inputs), "transcript (incomplete)")
+
+
 class EvidenceTextTest(unittest.TestCase):
     def test_speech_names_its_sentence_within_the_part(self):
         item = {"source": "speech", "start_seconds": 0.0, "end_seconds": 116.0, "sentence": 3}
