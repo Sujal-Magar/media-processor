@@ -20,19 +20,20 @@ runs the steps; small Python scripts do the local media work with FFmpeg.
 
 ## Layout and naming
 
-| Path                                  | Contents                                                                          |
-| ------------------------------------- | --------------------------------------------------------------------------------- |
-| `input/`                              | media files from the user (any type)                                              |
-| `work/<processor>/<name>-<time>/`     | temporary files for one job; the only place MCP servers may read                  |
-| `output/<processor>/<name>-<hash8>/`  | results for one source file (hash = first 8 of its SHA-256)                       |
-| `processors/<processor>/`             | that processor's scripts, usually `prepare.py`, a paid step, `finalize.py`        |
-| `.claude/skills/<processor>/SKILL.md` | the skill the user runs, same name as the processor                               |
-| `.claude/skills/<pipeline>/SKILL.md`  | a pipeline skill: runs processors by following their skills                       |
-| `lib/media.py`                        | shared FFmpeg/ffprobe helpers (probe, audio tracks, extraction, loudness, pauses) |
-| `lib/workspace.py`                    | shared paths, hashing, safe file writing, `.env` reading                          |
-| `lib/<provider>_api.py`               | client for a provider without an official MCP server (`openai_api.py`)            |
-| `servers/<provider>.py`               | starts one provider's MCP server; registered in `.mcp.json`                       |
-| `scripts/`                            | repo utilities such as `check_setup.py`                                           |
+| Path                                  | Contents                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `input/`                              | media files from the user (any type)                                                                         |
+| `work/<processor>/<name>-<time>/`     | temporary files for one job; the only place MCP servers may read                                             |
+| `output/<processor>/<name>-<hash8>/`  | results for one source file (hash = first 8 of its SHA-256)                                                  |
+| `output/.../<name>-<hash8>/history/`  | earlier results that `force` replaced, one `<time>/` folder each                                             |
+| `processors/<processor>/`             | that processor's scripts, usually `prepare.py`, a paid step, `finalize.py`                                   |
+| `.claude/skills/<processor>/SKILL.md` | the skill the user runs, same name as the processor                                                          |
+| `.claude/skills/<pipeline>/SKILL.md`  | a pipeline skill: runs processors by following their skills                                                  |
+| `lib/media.py`                        | shared FFmpeg/ffprobe helpers (probe, picture size, audio tracks and channels, extraction, loudness, pauses) |
+| `lib/workspace.py`                    | shared paths, hashing, safe file writing, result history, `.env` reading                                     |
+| `lib/<provider>_api.py`               | client for a provider without an official MCP server (`openai_api.py`, with its cost estimate)               |
+| `servers/<provider>.py`               | starts one provider's MCP server; registered in `.mcp.json`                                                  |
+| `scripts/`                            | repo utilities such as `check_setup.py`                                                                      |
 
 Visual tags are free-form. Their shared vocabulary is rebuilt from
 `output/tag-visuals/*/tags.json` on every run, so one folder is one tag library: keep

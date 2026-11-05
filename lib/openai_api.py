@@ -8,6 +8,7 @@ from the shell or .env and is never printed.
 from __future__ import annotations
 
 import json
+import math
 import os
 import urllib.error
 import urllib.request
@@ -17,6 +18,18 @@ from lib.workspace import dotenv_value
 
 API_BASE = "https://api.openai.com/v1"
 DEFAULT_VISION_MODEL = "gpt-6-luna"  # OpenAI's model for focused, high-volume tasks
+
+
+def estimate_image_tokens(width: int, height: int, detail: str) -> int:
+    """Input tokens for one image, by OpenAI's published tile formula: 85 at low detail;
+    at high detail the image is fitted in 2048x2048, its short side cut to 768, then
+    85 + 170 per 512 px tile. An estimate: a model may count differently."""
+    if detail == "low":
+        return 85
+    scale = min(1.0, 2048 / max(width, height))
+    scale *= min(1.0, 768 / (min(width, height) * scale))
+    tiles = math.ceil(width * scale / 512) * math.ceil(height * scale / 512)
+    return 85 + 170 * tiles
 
 
 class OpenAIError(Exception):

@@ -12,8 +12,14 @@ from lib.workspace import fail
 
 # Mono AAC is small to upload and enough for speech.
 SPEECH_AUDIO = ["-ac", "1", "-ar", "44100", "-c:a", "aac", "-b:a", "128k"]
-LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"  # single-pass EBU R128, spoken-word level
+# Single-pass EBU R128 at spoken-word level. loudnorm alone overshoots after resampling and
+# AAC encoding (0 dB peaks seen), so a limiter at -3 dBFS follows; level=false keeps its
+# auto-level from undoing the limit.
+LOUDNORM = (
+    "loudnorm=I=-16:TP=-1.5:LRA=11,aresample=44100,alimiter=limit=0.708:level=false"
+)
 SILENCE_FLOOR_DB = -120.0
+SILENT_CHANNEL_DB = -60.0  # a channel peaking below this carries no sound
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -59,6 +65,20 @@ def streams_of(info: dict[str, Any], kind: str) -> list[dict[str, Any]]:
     return [s for s in info.get("streams", []) if s.get("codec_type") == kind]
 
 
+def display_size(info: dict[str, Any]) -> tuple[int, int] | None:
+    """Width and height of the first picture as shown, after the rotation flag phones set
+    (ffmpeg rotates frames the same way when it decodes them)."""
+    videos = streams_of(info, "video")
+    if not videos or not videos[0].get("width") or not videos[0].get("height"):
+        return None
+    stream = videos[0]
+    rotation = (stream.get("tags") or {}).get("rotate") or 0
+    for side_data in stream.get("side_data_list") or []:
+        rotation = side_data.get("rotation", rotation)
+    width, height = int(stream["width"]), int(stream["height"])
+    return (height, width) if int(float(rotation)) % 180 else (width, height)
+
+
 # --- audio --------------------------------------------------------------------------------
 
 
@@ -77,13 +97,26 @@ def audio_tracks(info: dict[str, Any]) -> list[dict[str, Any]]:
     return tracks
 
 
+def describe_tracks(tracks: list[dict[str, Any]]) -> str:
+    """e.g. "track 0 (aac, default), track 1 (aac, eng)"."""
+    return ", ".join(
+        f"track {t['track']} ("
+        + ", ".join(
+            filter(None, [t["codec"], t["language"], t["default"] and "default"])
+        )
+        + ")"
+        for t in tracks
+    )
+
+
 def choose_track(tracks: list[dict[str, Any]], requested: int | None) -> int:
     if not tracks:
         fail("this file has no audio track")
     if requested is not None:
         if not 0 <= requested < len(tracks):
             fail(
-                f"--track {requested} does not exist; the file has {len(tracks)} audio track(s)"
+                f"--track {requested} does not exist: this file has {len(tracks)} audio "
+                f"track(s): {describe_tracks(tracks)}. Tracks count from 0."
             )
         return requested
     # With several tracks, follow the file's own "default" flag.
@@ -91,11 +124,40 @@ def choose_track(tracks: list[dict[str, Any]], requested: int | None) -> int:
     return flagged[0] if len(tracks) > 1 and flagged else 0
 
 
+def channel_peaks(source: Path, track: int) -> list[float]:
+    """Peak level in dB of each channel of one audio track."""
+    log = ffmpeg(
+        "-i", f"file:{source}", "-map", f"0:a:{track}",
+        "-af", "astats=measure_overall=none:measure_perchannel=Peak_level",
+        "-f", "null", "-",
+    )  # fmt: skip
+    return [
+        SILENCE_FLOOR_DB if value.endswith("inf") else float(value)
+        for value in re.findall(r"Peak level dB: (-?inf|-?[\d.]+)", log)
+    ]
+
+
+def live_channel(peaks: list[float]) -> int | None:
+    """The one channel with sound when every other is silent (phones often record a
+    wireless mic on one side only). None: mix all channels down."""
+    live = [index for index, peak in enumerate(peaks) if peak > SILENT_CHANNEL_DB]
+    return live[0] if len(peaks) > 1 and len(live) == 1 else None
+
+
 def extract_audio(
-    source: Path, destination: Path, *, track: int, normalize: bool
+    source: Path,
+    destination: Path,
+    *,
+    track: int,
+    normalize: bool,
+    channel: int | None = None,
 ) -> None:
-    """Extract one audio track as mono speech audio, without the source's metadata."""
-    filters = ["-af", LOUDNORM] if normalize else []
+    """Extract one audio track as mono speech audio, without the source's metadata.
+    With `channel`, only that channel is kept."""
+    chain = [f"pan=mono|c0=c{channel}"] if channel is not None else []
+    if normalize:
+        chain.append(LOUDNORM)
+    filters = ["-af", ",".join(chain)] if chain else []
     ffmpeg(
         "-loglevel", "error", "-y", "-i", f"file:{source}", "-map", f"0:a:{track}",
         "-vn", "-sn", "-dn",

@@ -5,6 +5,7 @@ Folder convention (``<processor>`` is e.g. ``transcribe``):
     input/                                   media files the user provides
     work/<processor>/<name>-<time>/          temporary files for one job
     output/<processor>/<name>-<hash8>/       results for one source file
+        history/<time>/                      earlier results that --force replaced
 """
 
 from __future__ import annotations
@@ -83,6 +84,53 @@ def write_text(path: Path, text: str) -> None:
 
 def write_json(path: Path, data: Any) -> None:
     write_text(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+
+
+def previous_created_at(result_file: Path) -> str | None:
+    """`created_at` of an earlier result, which prepare records as `replaces` on --force."""
+    try:
+        return json.loads(result_file.read_text(encoding="utf-8")).get("created_at")
+    except (OSError, ValueError):
+        return None
+
+
+def archive_previous(
+    output_dir: Path, result_file: str, names: list[str], replaces: str | None
+) -> Path | None:
+    """Move the result a --force run replaces into <output_dir>/history/<its time>/.
+
+    Only when `result_file` still has the `created_at` prepare saw, so a resumed or repeated
+    finalize never archives twice. History is nested inside the result folder, so globs
+    such as output/<processor>/*/tags.json never see it.
+    """
+    if not replaces or previous_created_at(output_dir / result_file) != replaces:
+        return None
+    stamp = re.sub(r"[^0-9T]", "", replaces.split("+")[0]).replace("T", "-")
+    target = output_dir / "history" / stamp
+    target.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        if (output_dir / name).exists():
+            os.replace(output_dir / name, target / name)
+    return target
+
+
+def result_metadata(plan: dict[str, Any], status: str) -> dict[str, Any]:
+    """The job plan as saved next to a result: final status, and no paths into work/,
+    which is deleted with the job."""
+    work = str(WORK) + os.sep
+
+    def clean(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: clean(item)
+                for key, item in value.items()
+                if not (isinstance(item, str) and item.startswith(work))
+            }
+        if isinstance(value, list):
+            return [clean(item) for item in value]
+        return value
+
+    return {**clean(plan), "status": status}
 
 
 def dotenv_value(name: str) -> str | None:

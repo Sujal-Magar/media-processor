@@ -4,6 +4,8 @@
 - Takes ELEVENLABS_API_KEY from the shell, or from .env if the shell has none.
 - Lets the server read and write only inside work/ (its ELEVENLABS_MCP_BASE_PATH).
 - Output mode "files": results are saved to disk instead of being returned to Claude.
+- The pinned version always sends model scribe_v2 with request logging on, so ElevenLabs
+  keeps what it receives; see the STT_* constants.
 
 stdout belongs to the MCP protocol, so messages go to stderr only.
 """
@@ -20,6 +22,11 @@ from lib.workspace import WORK, dotenv_value
 
 # The skills were written against this version's tool parameters; bump deliberately.
 PACKAGE = "elevenlabs-mcp==0.12.2"
+# What this version's speech_to_text hard-codes (server.py, speech_to_text). The tool can't
+# change them, so transcribe/finalize.py records them. Re-check when bumping PACKAGE.
+STT_MODEL = "scribe_v2"
+STT_LOGGING = True  # ElevenLabs keeps the request (no zero retention)
+STT_AUDIO_EVENTS = True  # sounds such as (laughter) are written into the text
 
 
 def main() -> None:

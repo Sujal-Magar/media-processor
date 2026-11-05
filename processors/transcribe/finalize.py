@@ -21,16 +21,21 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
 from lib.workspace import (
+    archive_previous,
     fail,
     fmt_time,
     is_job_dir,
     now_iso,
     print_json,
+    result_metadata,
     write_json,
     write_text,
 )
+from servers.elevenlabs import PACKAGE, STT_AUDIO_EVENTS, STT_LOGGING, STT_MODEL
 
 SPEAKER_LINE = re.compile(r"^(SPEAKER \w+):\s?(.*)$")
+# The MCP tool reports no model; the pinned server version fixes it (servers/elevenlabs.py).
+PINNED_BY = PACKAGE.replace("==", " ")
 
 
 def read_part(part: dict[str, Any]) -> str | None:
@@ -44,24 +49,69 @@ def read_part(part: dict[str, Any]) -> str | None:
     return unicodedata.normalize("NFC", files[-1].read_text(encoding="utf-8")).strip()
 
 
+def track_text(source: dict[str, Any]) -> str:
+    if source.get("channel") is None:
+        return str(source["track"])
+    return (
+        f"{source['track']}, channel {source['channel']} only (the others are silent)"
+    )
+
+
+def normalized_text(plan: dict[str, Any]) -> str:
+    before = plan.get("levels", {}).get("before_normalize")
+    if not plan["options"]["normalize"]:
+        return "no"
+    if not before:
+        return "yes"
+    return f"yes (average {before['mean_db']:.1f} dB before, {plan['levels']['mean_db']:.1f} dB after)"
+
+
+def language_text(language: str | None) -> str:
+    if not language:
+        return "auto-detect"
+    return (
+        f"{language}, forced: speech in other languages may be translated into "
+        f"{language} or left out"
+    )
+
+
+def timestamps_text(options: dict[str, Any], parts: int) -> str:
+    if options.get("part_seconds") is None:
+        return "per part, split at pauses" if parts > 1 else "none"
+    limit = f"up to about {options['part_seconds']:g} s"
+    if parts == 1:
+        return f"one part (the audio fits in one part of {limit})"
+    return f"per part, split at pauses ({parts} parts of {limit})"
+
+
 def to_markdown(
     plan: dict[str, Any], parts: list[dict[str, Any]], complete: bool
 ) -> str:
     source, options = plan["source"], plan["options"]
     several = len(parts) > 1
+    # Asked for timestamps: every part gets a time heading, even when there is one part.
+    timestamps = options.get("part_seconds") is not None
     lines = [
         f"# Transcript: {source['name']}",
         "",
         f"- Length: {fmt_time(source['duration_seconds'])}",
-        f"- Language requested: {options['language'] or 'auto-detect'} "
-        "(detected language is not reported by the ElevenLabs MCP tool)",
+        (
+            f"- Language requested: {language_text(options['language'])} "
+            "(detected language is not reported by the ElevenLabs MCP tool)"
+        ),
         f"- Speaker labels: {'yes' if options['diarize'] else 'no'}",
-        f"- Timestamps: {'per part, split at pauses' if several else 'none'}",
-        f"- Audio track: {source['track']}",
+        f"- Timestamps: {timestamps_text(options, len(parts))}",
+        f"- Audio track: {track_text(source)}",
+        f"- Normalized: {normalized_text(plan)}",
+        f"- Model: {STT_MODEL} (fixed by {PINNED_BY})",
         f"- Created: {plan['finalized_at']}",
         "",
         "> Original-language output from ElevenLabs. Not translated or edited.",
     ]
+    if STT_LOGGING:
+        lines.append(
+            "> ElevenLabs keeps the audio it received (request logging is on)."
+        )
     if several and options["diarize"]:
         lines.append("> Speaker numbers restart in every part.")
     if not complete:
@@ -71,7 +121,7 @@ def to_markdown(
         )
     for part in parts:
         lines.append("")
-        if several:
+        if timestamps or several:
             start, end = fmt_time(part["start_seconds"]), fmt_time(part["end_seconds"])
             lines.extend([f"## {start} - {end}", ""])
         if part["missing"]:
@@ -118,26 +168,41 @@ def main() -> None:
     complete = done == len(parts)
 
     output_dir = Path(plan["output_dir"])
+    files = ["transcript.md", "transcript.json", "metadata.json"]
+    archived = archive_previous(
+        output_dir, "transcript.json", files, plan.get("replaces")
+    )
     document = {
         "version": 1,
         "processor": plan["processor"],
         "complete": complete,
         "source": plan["source"],
         "options": plan["options"],
+        # A forced language makes ElevenLabs write other languages in it, or drop them.
+        "language_forced": bool(plan["options"]["language"]),
         "provider": {
             "name": "elevenlabs",
             "tool": "elevenlabs-mcp speech_to_text",
-            "model": "not reported",
+            "model": f"{STT_MODEL} (fixed by {PINNED_BY})",
+            "request_logging": STT_LOGGING,  # on: ElevenLabs keeps the request
+            "audio_events_tagged": STT_AUDIO_EVENTS,
             "detected_language": "not reported",
         },
-        "timestamps": "per part" if len(parts) > 1 else "none",
+        "timestamps": (
+            "per part"
+            if len(parts) > 1 or plan["options"].get("part_seconds") is not None
+            else "none"
+        ),
         "parts": parts,
         "text": "\n\n".join(p["text"] for p in parts if p["text"]),
         "created_at": plan["finalized_at"],
     }
     write_json(output_dir / "transcript.json", document)
     write_text(output_dir / "transcript.md", to_markdown(plan, parts, complete))
-    write_json(output_dir / "metadata.json", plan)
+    write_json(
+        output_dir / "metadata.json",
+        result_metadata(plan, "complete" if complete else "incomplete"),
+    )
     if not args.keep_work:
         shutil.rmtree(job_dir)
 
@@ -145,7 +210,8 @@ def main() -> None:
         {
             "status": "complete" if complete else "incomplete",
             "output_dir": str(output_dir),
-            "files": ["transcript.md", "transcript.json", "metadata.json"],
+            "files": files,
+            "previous_result": str(archived) if archived else None,
             "parts_transcribed": done,
             "parts_total": len(parts),
             "characters": len(document["text"]),

@@ -1,7 +1,7 @@
 ---
 name: process-video
 description: Run every video processor on one video at once - speech transcription (ElevenLabs) and visual tagging (OpenAI) - in parallel (paid). Runs only when the user types /process-video.
-argument-hint: <video> [speakers] [language ...] [timestamps [s]] [track N] [normalize] [every N seconds] [high detail] [force]
+argument-hint: <video> [speakers] [language ...] [timestamps [s]] [track N] [normalize] [every N seconds] [max N frames] [high detail] [no text pass] [force]
 disable-model-invocation: true
 ---
 
@@ -18,10 +18,13 @@ except for the order below.
 Split the request between them:
 
 - speech words (speakers, language, timestamps, track, normalize) → transcribe;
-- picture words (every N seconds, max frames, high detail) → tag-visuals;
+- picture words (every N seconds, max N frames, high detail, no text pass) → tag-visuals;
 - `force` → both.
 
 ## 1. Prepare both (free)
+
+If the request names a language, first ask the language question from the transcribe
+skill and wait for the answer.
 
 Run both prepare commands in one message so they run at the same time:
 
@@ -30,7 +33,12 @@ Run both prepare commands in one message so they run at the same time:
 
 Handle each status as its own skill says. If one has nothing to do (already done, silent
 audio, no picture), continue with the other. Then tell the user the plan in two lines:
-ElevenLabs requests and audio length; OpenAI requests, frames, model and detail.
+ElevenLabs requests and audio length; OpenAI requests, frames, model, detail and the
+estimated input tokens (`estimated_input_tokens`), plus, if `text_reread_estimate` is set,
+"up to `max_requests` re-read request(s) of about `input_tokens_per_frame` tokens per
+frame, only if small text is found". Below
+them, quote each prepare's `warnings` word for word, and describe only options that
+prepare printed.
 
 ## 2. Start visual tagging in the background
 
