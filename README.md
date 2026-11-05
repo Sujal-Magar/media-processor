@@ -5,14 +5,15 @@ skill, and **pipeline skills** run several processors on one file at once. FFmpe
 the local media work; AI providers do the rest. Audio, video and image processors share
 the same layout.
 
-| Processor   | Skill          | Input          | Output                                                                                                                             | Provider                                        |
-| ----------- | -------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| transcribe  | `/transcribe`  | audio or video | transcript (`.md`, `.json`)                                                                                                        | ElevenLabs speech-to-text (official MCP server) |
-| tag-visuals | `/tag-visuals` | video or photo | free-form visual tags (reusing the folder's existing tags) and on-screen text, with time ranges (`.md`, `.json`), frame thumbnails | OpenAI vision model (official API)              |
+| Processor   | Skill          | Input                                | Output                                                                                                                             | Provider                                        |
+| ----------- | -------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| transcribe  | `/transcribe`  | audio or video                       | transcript (`.md`, `.json`)                                                                                                        | ElevenLabs speech-to-text (official MCP server) |
+| tag-visuals | `/tag-visuals` | video or photo                       | free-form visual tags (reusing the folder's existing tags) and on-screen text, with time ranges (`.md`, `.json`), frame thumbnails | OpenAI vision model (official API)              |
+| tag-topics  | `/tag-topics`  | a file already transcribed or tagged | what it is about: type, topics and named things (never people), each with its evidence, and a short summary (`.md`, `.json`)       | OpenAI text model (official API)                |
 
-| Pipeline      | Skill            | Runs                                                     |
-| ------------- | ---------------- | -------------------------------------------------------- |
-| process-video | `/process-video` | `transcribe` and `tag-visuals` on one video, in parallel |
+| Pipeline      | Skill            | Runs                                                                        |
+| ------------- | ---------------- | --------------------------------------------------------------------------- |
+| process-video | `/process-video` | `transcribe` and `tag-visuals` on one video, in parallel, then `tag-topics` |
 
 How a processor runs:
 
@@ -33,6 +34,11 @@ output/transcribe/interview-<hash>/            output/tag-visuals/interview-<has
 
 `/process-video` runs both columns at the same time: tagging in the background while
 the transcription runs.
+
+When both are done, `tag-topics` reads the transcript, the visual tags and the clearly
+read on-screen text (never the file) and asks OpenAI, in one text request, what the
+video is about: its type (`student-testimonial`), topics (`australia-student-visa`) and
+named things (`subclass-500`). Every tag is English, lowercase, with hyphens.
 
 ## Setup (once)
 
@@ -73,7 +79,7 @@ Put a file in `input/`, then in Claude Code:
 | `max N frames`                      | tag-visuals | upper limit on frames (default 60); if it can't cover the video at the asked interval, the interval is stretched and a warning says to what                     |
 | `high detail`                       | tag-visuals | let the model see more detail (small objects); about 5× the input tokens per landscape frame and 13× per portrait phone frame, and skips the small-text re-read |
 | `no text pass`                      | tag-visuals | don't re-read small text at high detail (by default, frames with text too small to read are re-read in a second request)                                        |
-| `force`                             | both        | process again (charged again); the previous result moves to `history/<time>/` in its output folder                                                              |
+| `force`                             | all         | process again (charged again); the previous result moves to `history/<time>/` in its output folder                                                              |
 
 Claude tells you how many paid requests a job needs before sending anything (for tagging
 also a rough input-token estimate, by OpenAI's image tile formula, and the most the
@@ -100,6 +106,14 @@ output/tag-visuals/interview-1a2b3c4d/
 ├── metadata.json     source file, sampling options, frame times, status
 ├── frames/           the frames that were tagged
 └── history/<time>/   earlier results that `force` replaced (only after a `force`)
+
+output/tag-topics/interview-1a2b3c4d/
+├── topics.md         type, topics and entities with their evidence (speech times,
+│                     on-screen text, visual tags), new tags marked, and the summary
+├── topics.json       the same, plus `visual` (the file's visual tags), confidence,
+│                     review status, the inputs it read, tokens used
+├── metadata.json     inputs, model, request plan, status
+└── history/<time>/   earlier results that `force` replaced (only after a `force`)
 ```
 
 You can then ask Claude things like "summarize the transcript" or "in which scenes does
@@ -107,18 +121,20 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
 
 ## Safety and cost
 
-- **Paid steps always ask.** `.claude/settings.json` puts ElevenLabs `speech_to_text` and
-  the OpenAI tagging script under `ask`, and blocks every other paid ElevenLabs tool
-  (voice cloning, text-to-speech, music, phone calls, ...).
+- **Paid steps always ask.** `.claude/settings.json` puts ElevenLabs `speech_to_text`
+  and the OpenAI tagging scripts (visual tags and topics) under `ask`, and blocks every
+  other paid ElevenLabs tool (voice cloning, text-to-speech, music, phone calls, ...).
 - **No double charges by accident.** The same source file is not processed twice unless
   you say `force`, and then the previous result is kept in `history/<time>/` (named after
   when it was made) instead of being overwritten. Failed requests are never retried. An interrupted tagging run keeps
   the batches it finished, and running `tag.py` on that job again pays only for the rest.
 - **Free when there is nothing to do.** Silent audio is not sent to ElevenLabs; an
   audio-only file is not sent to OpenAI.
-- **Providers only see prepared files.** ElevenLabs reads only `work/` (extracted audio);
-  OpenAI receives only the sampled frames (at most 768 px), plus, for text too small to read, a full-resolution crop around that text. Neither sees your
-  originals or other files.
+- **Providers only see prepared files.** ElevenLabs reads only `work/` (extracted
+  audio); OpenAI receives only the sampled frames (at most 768 px), plus, for text too
+  small to read, a full-resolution crop around that text. For topics, OpenAI receives
+  the transcript text, the visual tags and the clearly read on-screen text, never a
+  file. Neither sees your originals or other files.
 - **ElevenLabs keeps the audio.** The pinned MCP server (`elevenlabs-mcp` 0.12.2) always
   sends requests with logging on, so ElevenLabs stores the audio and transcript under its
   normal retention. The tool can't turn this off; zero retention would need another route
@@ -142,6 +158,7 @@ media-processor/
 ├── lib/media.py                   shared FFmpeg/ffprobe helpers
 ├── lib/workspace.py               shared paths, hashing, file writing
 ├── lib/openai_api.py              OpenAI API client (standard library only)
+├── lib/tags.py                    tag wording (lowercase, hyphens) and tag libraries
 ├── servers/<provider>.py          starts a provider's MCP server (.mcp.json)
 ├── scripts/check_setup.py         environment check for /setup
 ├── .claude/skills/<name>/         the skills you run (processors and pipelines)

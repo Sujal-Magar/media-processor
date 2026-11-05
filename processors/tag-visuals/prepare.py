@@ -16,7 +16,6 @@ import json
 import math
 import re
 import sys
-from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
@@ -25,6 +24,7 @@ from tag import existing_tags_text, reread_estimate
 
 from lib.media import display_size, duration_of, ffmpeg, probe, streams_of
 from lib.openai_api import DEFAULT_VISION_MODEL, estimate_image_tokens, setting
+from lib.tags import clean_label, tag_library
 from lib.workspace import (
     OUTPUT,
     fail,
@@ -173,30 +173,15 @@ def estimate_tokens(
 
 
 def existing_tags(exclude: Path) -> list[dict]:
-    """The library's vocabulary, rebuilt from earlier outputs so it never drifts.
-
-    `exclude` is this file's own earlier output: when re-tagging with --force, its old
-    tags must not count as the library, or nothing would ever be marked new.
-    """
-    uses: Counter[tuple[str, str]] = Counter()
-    for tags_file in (OUTPUT / PROCESSOR).glob("*/tags.json"):
-        if tags_file.parent == exclude:
-            continue
-        try:
-            tags = json.loads(tags_file.read_text(encoding="utf-8")).get("tags", [])
-        except (OSError, ValueError):
-            continue
-        for tag in tags:
-            uses[(tag["label"], tag["category"])] += len(tag.get("frames") or [0])
-    return [
-        {"label": label, "category": category, "uses": count}
-        for (label, category), count in uses.most_common(MAX_EXISTING_TAGS)
-    ]
+    """The library's vocabulary, rebuilt from earlier outputs so it never drifts (see
+    lib.tags.tag_library; `exclude` is this file's own earlier output)."""
+    return tag_library(OUTPUT / PROCESSOR, "tags.json", exclude, MAX_EXISTING_TAGS)
 
 
 def previous_tags(output_dir: Path, existing: list[dict]) -> list[dict]:
     """This file's own tags from the result --force replaces, offered for reuse but not
-    part of the library (they are still marked new; see finalize.py)."""
+    part of the library (they are still marked new; see finalize.py). Labels saved
+    before hyphens that now read the same are counted as one."""
     try:
         tags = json.loads((output_dir / "tags.json").read_text(encoding="utf-8"))[
             "tags"
@@ -204,14 +189,14 @@ def previous_tags(output_dir: Path, existing: list[dict]) -> list[dict]:
     except (OSError, ValueError, KeyError):
         return []
     known = {(t["label"], t["category"]) for t in existing}
+    own: dict[tuple[str, str], int] = {}
+    for tag in tags:
+        key = (clean_label(tag["label"]), tag["category"])
+        if key[0] and key not in known:
+            own[key] = own.get(key, 0) + len(tag.get("frames") or [0])
     return [
-        {
-            "label": t["label"],
-            "category": t["category"],
-            "uses": len(t.get("frames") or [0]),
-        }
-        for t in tags
-        if (t["label"], t["category"]) not in known
+        {"label": label, "category": category, "uses": uses}
+        for (label, category), uses in own.items()
     ]
 
 

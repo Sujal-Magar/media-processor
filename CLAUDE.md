@@ -11,8 +11,9 @@ runs the steps; small Python scripts do the local media work with FFmpeg.
   that call a paid API). Run one only inside the skill that needs it, as often as its plan
   says, and never retry a failed paid step.
 - Providers are reached only the way the processor defines: ElevenLabs through its MCP
-  server, OpenAI through `processors/tag-visuals/tag.py`. Never improvise another route
-  (curl, an SDK, a different tool), and never use tools under `deny`.
+  server, OpenAI through `processors/tag-visuals/tag.py` and
+  `processors/tag-topics/tag.py`. Never improvise another route (curl, an SDK, a
+  different tool), and never use tools under `deny`.
 - Results may be private. Do not open files in `output/` or `work/` unless the user asks.
 - Never read or print `.env`.
 - Never change a processor's original result. Derived work the user asks for (a
@@ -31,6 +32,7 @@ runs the steps; small Python scripts do the local media work with FFmpeg.
 | `.claude/skills/<pipeline>/SKILL.md`  | a pipeline skill: runs processors by following their skills                                                  |
 | `lib/media.py`                        | shared FFmpeg/ffprobe helpers (probe, picture size, audio tracks and channels, extraction, loudness, pauses) |
 | `lib/workspace.py`                    | shared paths, hashing, safe file writing, result history, `.env` reading                                     |
+| `lib/tags.py`                         | tag wording (English, lowercase, hyphens) and tag libraries rebuilt from results                             |
 | `lib/<provider>_api.py`               | client for a provider without an official MCP server (`openai_api.py`, with its cost estimate)               |
 | `servers/<provider>.py`               | starts one provider's MCP server; registered in `.mcp.json`                                                  |
 | `scripts/`                            | repo utilities such as `check_setup.py`                                                                      |
@@ -39,7 +41,13 @@ Visual tags are free-form. Their shared vocabulary is rebuilt from
 `output/tag-visuals/*/tags.json` on every run, so one folder is one tag library: keep
 each organisation in its own copy of this folder (the Pulse PRD requires per-client data
 isolation). Tags new to the library are marked `new`; read on-screen text must be
-confirmed against the frame before anyone relies on it.
+confirmed against the frame before anyone relies on it. Every tag is English,
+lowercase, with words joined by hyphens (`speaking-to-camera`); `lib/tags.py` cleans
+labels, also those in results saved before this rule.
+
+Topic tags (`tag-topics`: type, topic, entity) come from a file's transcript, visual tags
+and on-screen text in one text request; each cites its evidence, and none names a
+person. Their library is `output/tag-topics/*/topics.json`, rebuilt the same way.
 
 Processor names are verbs or verb-object pairs in kebab case (`transcribe`,
 `tag-visuals`, `enhance-audio`). Pipeline skills are named `process-<content>`

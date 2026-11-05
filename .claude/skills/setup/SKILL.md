@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Check that ffmpeg, uvx, the API keys and the providers the processors use (ElevenLabs MCP server, OpenAI vision model) are ready. Free; use when the user asks whether things are set up or when provider tools are missing.
+description: Check that ffmpeg, uvx, the API keys and the providers the processors use (ElevenLabs MCP server, OpenAI models) are ready. Free; use when the user asks whether things are set up or when provider tools are missing.
 ---
 
 # Setup check
@@ -15,9 +15,11 @@ Nothing here costs money.
      user to paste the key into the chat, and never read `.env`.
    - OPENAI_API_KEY: the same, with a key from https://platform.openai.com/api-keys after
      `OPENAI_API_KEY=`.
-   - OpenAI model access: the script asked OpenAI (free) whether the key can use the
-     vision model. `invalid_api_key` = wrong key; `model_not_found` = set
-     `OPENAI_VISION_MODEL` in `.env` to a model the key can use.
+   - OpenAI model access / OpenAI topic model: the script asked OpenAI (free) whether
+     the key can use the vision model, and the topic model when `OPENAI_TOPIC_MODEL` is
+     set to another one. `invalid_api_key` = wrong key; `model_not_found` = set
+     `OPENAI_VISION_MODEL` (tagging) or `OPENAI_TOPIC_MODEL` (topics) in `.env` to a
+     model the key can use.
 
 2. Check that the `mcp__elevenlabs__*` tools are available. If they are not:
    - the key may be missing (step 1), or the server failed to start;
@@ -54,4 +56,5 @@ Nothing here costs money.
    make `/setup` more informative.
 
 End with one line each for `/transcribe` (ElevenLabs key and MCP tools), `/tag-visuals`
-(OpenAI key and model access) and `/process-video` (both): ready, or what is missing.
+and `/tag-topics` (OpenAI key and model access) and `/process-video` (all): ready, or
+what is missing.
