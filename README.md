@@ -12,6 +12,7 @@ the same layout.
 | tag-topics    | `/tag-topics`    | a file already transcribed or tagged   | what it is about: type, topics and named things (never people), each with its evidence, and a short summary (`.md`, `.json`)                                       | OpenAI text model (official API)                |
 | generate-copy | `/generate-copy` | a video already transcribed and tagged | draft copy: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtag clusters, an optional translation (`.md`, `.json`) | OpenAI text model (official API)                |
 | draft-report  | `/draft-report`  | one month's numbers (`.json`)          | draft monthly report narrative: a headline, three short paragraphs, the top post, a line per highlight and tile, next month's plan in the client's words (`.md`, `.json`) | OpenAI text model (official API)                |
+| translate-subtitles | `/translate-subtitles` | a video already transcribed            | English-only and Nepali-only subtitles (`.vtt`, `.srt`), cue for cue with the same times as the mixed-language ones                                                       | OpenAI text model (official API)                |
 
 | Pipeline      | Skill            | Runs                                                                        |
 | ------------- | ---------------- | --------------------------------------------------------------------------- |
@@ -63,19 +64,36 @@ that matches nothing makes the draft incomplete. It describes what happened, not
 the next-month list only rewords the strategist's plan. The draft is for the strategist
 to review, edit and sign off; nothing is sent.
 
+`/transcribe` also writes subtitles (`transcript.vtt`, `transcript.srt`) in the language
+spoken, which for many videos mixes Nepali and English. `/translate-subtitles` turns them
+into an English-only and a Nepali-only track, in one text request. The track in the
+language most of the speech is in is put together by the scripts: each cue exactly as
+said, with only the words said in the other language replaced by the model's rendering,
+so nothing said in that language is reworded. That gives two Nepali tracks: one with
+the English words translated (`transcript.ne`), one with them written in Devanagari by
+their sound (`transcript.ne-spoken`, "market" as मार्केट). The other track translates each
+whole cue. Forms of the organisation's name that speech-to-text writes, listed as
+`heard_as` in `organisation.json`, are left for the model to correct from context (the
+same word can be a real place).
+All tracks keep the same cues and times and stay in step with the video. Spoken
+names stay (subtitles say what was said), the organisation's name is spelled as
+`organisation.json` gives it, and the result is a draft for a speaker of each language
+to check.
+
 ## Setup (once)
 
 ```fish
 sudo pacman -S --needed ffmpeg uv
 cd ~/programming/work/media-processor
 cp .env.example .env          # put your ElevenLabs and OpenAI keys in it
-cp organisation.example.json organisation.json   # your organisation's name, website, hashtags
+cp organisation.example.json organisation.json   # your organisation's name, website, hashtags,
+                                                 # and how speech-to-text mishears it (heard_as)
 claude                        # or open this folder in the Claude Desktop app's Code tab
 ```
 
 In Claude Code, run `/setup`. It checks ffmpeg, uvx, both keys, the ElevenLabs MCP
 server and whether your OpenAI key can use the models (vision, and the topic, copy and
-report models if you set them apart), and lists the ElevenLabs
+report and translation models if you set them apart), and lists the ElevenLabs
 key's permissions. All of it is free. The first start downloads the ElevenLabs server
 with `uvx` (about a minute).
 
@@ -90,6 +108,7 @@ Put a file in `input/`, then in Claude Code:
 /tag-visuals input/photo.jpg
 /tag-visuals input/interview.mov every 2 seconds high detail
 /draft-report input/reports/2026-10.json
+/translate-subtitles input/interview.mov
 ```
 
 `/process-video` accepts the words of both processors:
@@ -164,6 +183,17 @@ output/draft-report/2026-10-1a2b3c4d/       (named after the month's input file)
 │                     dropped, review status (`draft`), tokens used
 ├── metadata.json     month, inputs, model, request plan, status
 └── history/<time>/   earlier results that `force` replaced (only after a `force`)
+
+output/translate-subtitles/interview-1a2b3c4d/
+├── transcript.en.vtt, transcript.en.srt    English-only subtitles
+├── transcript.ne.vtt, transcript.ne.srt    Nepali-only subtitles: Nepali as said, the
+│                                           English words translated into Nepali
+├── transcript.ne-spoken.vtt, .srt          Nepali as spoken, all in Devanagari: the
+│                                           English words written by their sound
+├── translation.json  every cue with its times, original text and translations, what
+│                     needs checking, review status (`draft`), tokens used
+├── metadata.json     inputs, languages, model, request plan, status
+└── history/<time>/   earlier results that `force` replaced (only after a `force`)
 ```
 
 You can then ask Claude things like "summarize the transcript" or "in which scenes does
@@ -172,7 +202,7 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
 ## Safety and cost
 
 - **Paid steps always ask.** `.claude/settings.json` puts ElevenLabs `speech_to_text`
-  and the OpenAI scripts (visual tags, topics, copy and reports) under `ask`, and blocks every
+  and the OpenAI scripts (visual tags, topics, copy, reports and subtitle translation) under `ask`, and blocks every
   other paid ElevenLabs tool (voice cloning, text-to-speech, music, phone calls, ...).
 - **No double charges by accident.** The same source file is not processed twice unless
   you say `force`, and then the previous result is kept in `history/<time>/` (named after
@@ -185,8 +215,9 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
   small to read, a full-resolution crop around that text. For topics and copy, OpenAI
   receives the transcript text, the visual tags and the clearly read on-screen text
   (copy also the topic tags and your brief), never a file. For reports, OpenAI receives
-  the month's numbers and, for posts made from a video, its topic tags and hook. Neither
-  sees your originals or other files.
+  the month's numbers and, for posts made from a video, its topic tags and hook; for
+  subtitle translation, the subtitle cues' text. Neither sees your originals or other
+  files.
 - **ElevenLabs keeps the audio.** The pinned MCP server (`elevenlabs-mcp` 0.12.2) always
   sends requests with logging on, so ElevenLabs stores the audio and transcript under its
   normal retention. The tool can't turn this off; zero retention would need another route
@@ -216,7 +247,7 @@ media-processor/
 ├── lib/material.py                earlier results as text for a model (topics, copy)
 ├── lib/numbers.py                 numbers in model text checked against the data given
 ├── fixtures/                      example inputs (report-input.example.json)
-├── lib/organisation.py            the organisation's own name and hashtags (organisation.json)
+├── lib/organisation.py            the organisation's own name, hashtags and misheard forms (organisation.json)
 ├── organisation.json              your organisation's details (not in git; see the example)
 ├── servers/<provider>.py          starts a provider's MCP server (.mcp.json)
 ├── scripts/check_setup.py         environment check for /setup
@@ -259,6 +290,9 @@ python3 processors/generate-copy/generate.py work/generate-copy/<job-folder>   #
 
 python3 processors/draft-report/prepare.py input/reports/2026-10.json
 python3 processors/draft-report/draft.py work/draft-report/<job-folder>       # paid
+
+python3 processors/translate-subtitles/prepare.py input/interview.mov --languages en,ne
+python3 processors/translate-subtitles/translate.py work/translate-subtitles/<job-folder>   # paid
 ```
 
 ## Settings
@@ -273,6 +307,8 @@ Optional values in `.env` (see `.env.example`):
 | `OPENAI_COPY_REASONING_EFFORT` | `low`        | reasoning for copy; `unset` sends no setting             |
 | `OPENAI_REPORT_MODEL`          | vision model | text model for `/draft-report`                           |
 | `OPENAI_REPORT_REASONING_EFFORT` | `low`      | reasoning for reports; `unset` sends no setting          |
+| `OPENAI_TRANSLATE_MODEL`       | vision model | text model for `/translate-subtitles`                    |
+| `OPENAI_TRANSLATE_REASONING_EFFORT` | `low`   | reasoning for translation; `unset` sends no setting      |
 
 ## Limits
 
@@ -287,6 +323,15 @@ Optional values in `.env` (see `.env.example`):
   closer times; exact cue times need word timings, which the MCP tool does not return.
   The `.vtt` says this in a NOTE line. Check subtitles against the video before
   publishing.
+- `/translate-subtitles` keeps each cue's times, so a translation that runs longer than
+  its cue stays on screen as briefly as the original. The model is asked to translate
+  concisely; a translation still too long for two lines is shown as several cues within
+  its cue's time, and `checks` lists it, as it does a track that kept less than 90% of
+  the words said in its own language (it reworded what was said). Line width counts what
+  takes room on screen
+  (Devanagari signs drawn over or under a letter do not), for every subtitle. Its checks catch an untranslated cue (no Devanagari in Nepali, Devanagari
+  left in English) and a dropped number, not a wrong meaning: a speaker of the language
+  checks the tracks before they are published.
 - With `speakers` and several parts, speaker numbers restart in each part.
 - `/generate-copy` soundbites name their sentence, but their times are those of the
   transcript part they are in (a short video is often one part), so an editor finds the

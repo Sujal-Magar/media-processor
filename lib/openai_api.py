@@ -81,6 +81,15 @@ def report_model() -> str:
     )
 
 
+def translate_model() -> str:
+    """The model translate-subtitles uses: OPENAI_TRANSLATE_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_TRANSLATE_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
 def request(
     method: str,
     path: str,

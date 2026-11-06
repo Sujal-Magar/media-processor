@@ -15,10 +15,10 @@ Nothing here costs money.
      user to paste the key into the chat, and never read `.env`.
    - OPENAI_API_KEY: the same, with a key from https://platform.openai.com/api-keys after
      `OPENAI_API_KEY=`.
-   - OpenAI model access / topic / copy / report model: the script asked OpenAI (free)
-     whether the key can use the vision model, and the topic, copy and report models
-     when `OPENAI_TOPIC_MODEL`, `OPENAI_COPY_MODEL` or `OPENAI_REPORT_MODEL` set another
-     one. `invalid_api_key` = wrong key; `model_not_found` = set that variable
+   - OpenAI model access / topic / copy / report / translation model: the script asked
+     OpenAI (free) whether the key can use the vision model, and the topic, copy, report
+     and translation models when `OPENAI_TOPIC_MODEL`, `OPENAI_COPY_MODEL`,
+     `OPENAI_REPORT_MODEL` or `OPENAI_TRANSLATE_MODEL` set another one. `invalid_api_key` = wrong key; `model_not_found` = set that variable
      (`OPENAI_VISION_MODEL` for tagging) in `.env` to a model the key can use.
 
 2. Check that the `mcp__elevenlabs__*` tools are available. If they are not:
@@ -56,5 +56,6 @@ Nothing here costs money.
    make `/setup` more informative.
 
 End with one line each for `/transcribe` (ElevenLabs key and MCP tools), `/tag-visuals`,
-`/tag-topics`, `/generate-copy` and `/draft-report` (OpenAI key and model access) and
+`/tag-topics`, `/generate-copy`, `/draft-report` and `/translate-subtitles` (OpenAI key
+and model access) and
 `/process-video` (all): ready, or what is missing.

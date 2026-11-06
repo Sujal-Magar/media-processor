@@ -10,7 +10,7 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-SCRIPT_NAMES = ("prepare", "tag", "generate", "draft", "subtitles", "finalize")
+SCRIPT_NAMES = ("prepare", "tag", "generate", "draft", "translate", "subtitles", "finalize")
 
 
 def load_script(processor: str, name: str) -> ModuleType:

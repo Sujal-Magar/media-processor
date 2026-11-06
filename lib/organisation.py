@@ -1,8 +1,9 @@
 """The organisation this folder belongs to (one folder is one organisation's library),
 from organisation.json at the repo root: its name as written, other names it goes by,
-its website, approved brand hashtags and a short note. Speech-to-text and frame reading
-can get a name wrong ("Tilicho" heard as a better-known place); this file is the
-spelling the processors trust. Optional; the file is client data and stays out of git.
+its website, approved brand hashtags, a short note and the forms speech-to-text writes
+for its name (`heard_as`). Speech-to-text and frame reading can get a name wrong
+("Tilicho" heard as a better-known place); this file is the spelling the processors
+trust. Optional; the file is client data and stays out of git.
 """
 
 from __future__ import annotations
@@ -48,13 +49,17 @@ def load_organisation(path: Path = ORGANISATION_FILE) -> dict[str, Any] | None:
     note = re.sub(r"\s+", " ", str(data.get("note") or "")).strip()
     if len(note) > MAX_NOTE_CHARS:
         fail(f"{path.name}: note has {len(note)} characters; at most {MAX_NOTE_CHARS}")
-    return {
+    organisation = {
         "name": data["name"].strip(),
         "other_names": strings(data, "other_names"),
         "website": str(data.get("website") or "").strip(),
         "hashtags": [hashtag_form(tag) for tag in strings(data, "hashtags")],
         "note": note,
     }
+    # Only when set, so results saved before the field existed are not taken as outdated.
+    if heard_as := strings(data, "heard_as"):
+        organisation["heard_as"] = heard_as
+    return organisation
 
 
 def brand_forms(organisation: dict[str, Any] | None) -> list[str]:
@@ -84,4 +89,9 @@ def organisation_section(organisation: dict[str, Any] | None) -> str:
         lines.append(f"Its hashtags: {', '.join(organisation['hashtags'])}")
     if organisation["note"]:
         lines.append(f"Note: {organisation['note']}")
+    if organisation.get("heard_as"):
+        lines.append(
+            "Speech-to-text may write the name as: "
+            f"{', '.join(organisation['heard_as'])} (which can also be a real word or place)"
+        )
     return "\n".join(lines)

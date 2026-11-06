@@ -81,6 +81,15 @@ class OrganisationTest(unittest.TestCase):
         self.assertIn("Name: Tilicho Consulting Group", section)
         self.assertIn("Website: https://www.tilicho.com", section)
 
+    def test_heard_as_only_when_given(self):
+        self.write({"name": "Tilicho Consulting Group"})
+        self.assertNotIn("heard_as", organisation.load_organisation(self.path))
+        self.write({"name": "Tilicho Consulting Group", "heard_as": [" Tilottama ", "तिलोत्तमा"]})
+        found = organisation.load_organisation(self.path)
+        self.assertEqual(found["heard_as"], ["Tilottama", "तिलोत्तमा"])
+        self.assertIn("Speech-to-text may write the name as: Tilottama, तिलोत्तमा",
+                      organisation.organisation_section(found))  # fmt: skip
+
     def test_without_a_name_fails(self):
         self.write({"other_names": ["x"]})
         with self.assertRaises(SystemExit):

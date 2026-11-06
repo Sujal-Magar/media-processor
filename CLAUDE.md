@@ -12,9 +12,10 @@ runs the steps; small Python scripts do the local media work with FFmpeg.
   says, and never retry a failed paid step.
 - Providers are reached only the way the processor defines: ElevenLabs through its MCP
   server, OpenAI through `processors/tag-visuals/tag.py`,
-  `processors/tag-topics/tag.py`, `processors/generate-copy/generate.py` and
-  `processors/draft-report/draft.py`. Never improvise another route (curl, an SDK, a
-  different tool), and never use tools under `deny`.
+  `processors/tag-topics/tag.py`, `processors/generate-copy/generate.py`,
+  `processors/draft-report/draft.py` and `processors/translate-subtitles/translate.py`.
+  Never improvise another route (curl, an SDK, a different tool), and never use tools
+  under `deny`.
 - Results may be private. Do not open files in `output/` or `work/` unless the user asks.
 - Never read or print `.env`.
 - Never change a processor's original result. Derived work the user asks for (a
@@ -38,6 +39,7 @@ runs the steps; small Python scripts do the local media work with FFmpeg.
 | `lib/workspace.py`                    | shared paths, hashing, safe file writing, result history, `.env` reading                                     |
 | `lib/tags.py`                         | tag wording (English, lowercase, hyphens) and tag libraries rebuilt from results                             |
 | `lib/material.py`                     | earlier results (speech, visual tags, on-screen text) as referenced text for a model                         |
+| `lib/subtitles.py`                    | subtitle cues with estimated times, line wrapping, WebVTT and SRT (transcribe, translate-subtitles)          |
 | `lib/numbers.py`                      | numbers in model-written text checked against the numbers it was given (48.2K for 48,200)                    |
 | `lib/organisation.py`                 | the organisation's own details from `organisation.json` (git-ignored client data; see the example file)      |
 | `lib/<provider>_api.py`               | client for a provider without an official MCP server (`openai_api.py`, with its cost estimate)               |
@@ -70,6 +72,17 @@ request. It is a draft for the strategist to sign off, never sent. Every sentenc
 its data and every number must be one the data holds; it describes what happened, never
 why, and next month's list only rewords the strategist's plan (empty without one).
 Strategic insight (C18b) is not part of it.
+
+Subtitles (`transcribe`) are WebVTT and SRT in the language spoken; their cue times are
+estimated within each transcript part. `translate-subtitles` makes English-only and
+Nepali-only tracks from the same cues in one text request, cue for cue, so every track
+keeps the same times. The track in the language most of the speech is in is assembled by
+finalize from what was said, with only the other language's words (spans) from the
+model, so the model never rewords what was said: `transcript.ne` with those words
+translated, `transcript.ne-spoken` with them written in Devanagari by their sound. Words
+matching `heard_as` in `organisation.json` (how speech-to-text mishears the name) are
+spans too, which the model corrects only where the cue is about the organisation. Spoken names stay in subtitles; the translations are drafts for a
+speaker of the language to check.
 
 Processor names are verbs or verb-object pairs in kebab case (`transcribe`,
 `tag-visuals`, `enhance-audio`). Pipeline skills are named `process-<content>`

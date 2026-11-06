@@ -2,7 +2,7 @@
 
 ## Components it currently tackles
 
-- **C06b** Media transcription & visual tagging: `/transcribe`, `/tag-visuals`, `/tag-topics`
+- **C06b** Media transcription & visual tagging: `/transcribe` (with WebVTT/SRT subtitles), `/translate-subtitles`, `/tag-visuals`, `/tag-topics`
 - **C09b** Creative copywriting & script generation: `/generate-copy`
 - **C17b** Report narrative synthesis: `/draft-report`
 
@@ -14,6 +14,7 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 - `/tag-visuals`: what is visible (objects, scenes, activities, attributes) and readable on-screen text, with time ranges, using an **OpenAI** vision model.
 - `/tag-topics`: what a file is about (type, topics, named things), each tag citing its evidence, from the transcript and visual tags.
 - `/generate-copy`: draft copy from the same results: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtags and an optional translation (e.g. Nepali).
+- `/translate-subtitles`: English-only and Nepali-only subtitle tracks from the mixed-language ones, cue for cue with the same times.
 - `/draft-report`: the narrative of a client's monthly report (headline, three short paragraphs, top post, highlight and tile lines, next month's plan in the client's words) from that month's numbers, each sentence citing its data and every number checked against it. The numbers are mocked until Pulse's analytics exist.
 - `/process-video`: runs transcription and visual tagging on one video at the same time, then topics.
 
@@ -51,10 +52,15 @@ input/<file>
   │                  → tag.py: one OpenAI text request
   │                  → finalize.py → output/tag-topics/<name>-<hash>/topics.md, .json
   │
-  └─ /generate-copy: prepare.py (the same material, topic tags, organisation.json,
-                     platforms, tone, brief)
-                     → generate.py: one OpenAI text request
-                     → finalize.py → output/generate-copy/<name>-<hash>/copy.md, .json
+  ├─ /generate-copy: prepare.py (the same material, topic tags, organisation.json,
+  │                  platforms, tone, brief)
+  │                  → generate.py: one OpenAI text request
+  │                  → finalize.py → output/generate-copy/<name>-<hash>/copy.md, .json
+  │
+  └─ /translate-subtitles: prepare.py (the transcript's subtitle cues, organisation.json)
+                     → translate.py: one OpenAI text request (every cue, each language)
+                     → finalize.py → output/translate-subtitles/<name>-<hash>/
+                       transcript.en, transcript.ne and transcript.ne-spoken (.vtt, .srt)
 
 input/reports/<month>.json
   └─ /draft-report:  prepare.py (the month's totals, platforms, post snapshots, highlights,
@@ -81,13 +87,14 @@ Each processor follows the same pattern: **prepare (free, local) → paid step �
 ## Layout
 
 ```
-.claude/skills/        setup, transcribe, tag-visuals, tag-topics, generate-copy, draft-report,
-                       process-video
+.claude/skills/        setup, transcribe, tag-visuals, tag-topics, generate-copy,
+                       translate-subtitles, draft-report, process-video
 .claude/settings.json  permissions: allowed / asks first / blocked
 processors/<name>/     prepare.py, paid step, finalize.py
 lib/                   media.py (FFmpeg), workspace.py (paths, files), openai_api.py,
                        tags.py, material.py (results as text), organisation.py,
-                       numbers.py (numbers in model text checked against the data)
+                       numbers.py (numbers in model text checked against the data),
+                       subtitles.py (subtitle cues, WebVTT and SRT)
 fixtures/              example inputs (report-input.example.json)
 servers/elevenlabs.py  starts the ElevenLabs MCP server (.mcp.json)
 scripts/check_setup.py free environment and key checks
