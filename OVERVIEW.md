@@ -5,6 +5,7 @@
 - **C06b** Media transcription & visual tagging: `/transcribe` (with WebVTT/SRT subtitles), `/translate-subtitles`, `/tag-visuals`, `/tag-topics`
 - **C09b** Creative copywriting & script generation: `/generate-copy`
 - **C17b** Report narrative synthesis: `/draft-report`
+- **C18b** Strategic insight inference: `/draft-insights`
 
 ## What it is
 
@@ -16,6 +17,7 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 - `/generate-copy`: draft copy from the same results: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtags and an optional translation (e.g. Nepali).
 - `/translate-subtitles`: from the mixed Nepali-English subtitles, three tracks with the same cue times: Nepali (every Nepali word as said, the English words translated), Nepali as spoken (all in Devanagari, the English words written by their sound) and English (translated cue by cue).
 - `/draft-report`: the narrative of a client's monthly report (headline, three short paragraphs, top post, highlight and tile lines, next month's plan in the client's words) from that month's numbers, each sentence citing its data and every number checked against it. The numbers are mocked until Pulse's analytics exist.
+- `/draft-insights`: for each result the anomaly rules flag, why it may have happened (as hypotheses to test) and what to ask the client for next month, as drafts for the strategist. The triggers are mocked until Pulse's rules exist.
 - `/process-video`: runs transcription and visual tagging on one video at the same time, then topics.
 
 ## Why it is built this way
@@ -33,6 +35,7 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 | Nepali subtitle tracks are put together by code, not the model   | Asked to keep what was said, the model still reworded about one Nepali word in five. Now only the English words go to the model; every Nepali word is copied from the transcript.       |
 | Report numbers are given to the model, never left to it          | The model only words the month: every number it writes is checked against the data its sentence cites, and rankings of posts are worked out by prepare, not by the model.               |
 | Report data is mocked for now                                    | Pulse's analytics (C15) and report compilation (C17a) don't exist yet, so `input/reports/<month>.json` stands in for them, in the shape their documents define.                         |
+| Insights give hypotheses, never causes                           | Pulse asks C18b to say why a result happened, but also forbids models to invent causes. Each "why" is a possibility with what would confirm or refute it, resting on comparisons prepare worked out. |
 
 ## How it works
 
@@ -74,6 +77,12 @@ input/reports/<month>.json
                      → finalize.py (numbers and rankings checked against the data)
                      → output/draft-report/<month>-<hash>/report.md, .json
 
+input/insights/<month>.json (+ input/reports/ for the 90-day window)
+  └─ /draft-insights: prepare.py (triggers checked; comparisons between groups of posts)
+                     → draft.py: one OpenAI text request
+                     → finalize.py (numbers and wording checked against the data)
+                     → output/draft-insights/<month>-<hash>/insights.md, .json
+
 /process-video = transcribe and tag-visuals in parallel, then tag-topics.
 ```
 
@@ -86,24 +95,26 @@ Each processor follows the same pattern: **prepare (free, local) → paid step �
 - Silent audio and audio-only files are skipped for free.
 - Partial results are kept. An interrupted tagging run resumes and pays only for what's missing.
 - Claude cannot read `.env` (the keys). Scripts print counts and paths, not transcripts, tags or copy.
-- People are never named in topics, copy or reports. Copy, reports and translated subtitles are drafts (`review_status: draft`) and are never published or sent.
+- People are never named in topics, copy, reports or insights. Copy, reports, insights and translated subtitles are drafts (`review_status: draft`) and are never published or sent.
 - Subtitles keep what was said, names included; the translated tracks are for a speaker of each language to check before publishing.
 
 ## Layout
 
 ```
 .claude/skills/        setup, transcribe, tag-visuals, tag-topics, generate-copy,
-                       translate-subtitles, draft-report, process-video
+                       translate-subtitles, draft-report, draft-insights, process-video
 .claude/settings.json  permissions: allowed / asks first / blocked
 processors/<name>/     prepare.py, paid step, finalize.py
 lib/                   media.py (FFmpeg), workspace.py (paths, files), openai_api.py,
                        tags.py, material.py (results as text), organisation.py,
                        numbers.py (numbers in model text checked against the data),
-                       subtitles.py (subtitle cues, WebVTT and SRT)
-fixtures/              example inputs (report-input.example.json)
+                       subtitles.py (subtitle cues, WebVTT and SRT),
+                       report_input.py (a month's numbers), wording.py (cause and jargon checks)
+fixtures/              example inputs (report-input and insights-input .example.json)
 servers/elevenlabs.py  starts the ElevenLabs MCP server (.mcp.json)
 scripts/check_setup.py free environment and key checks
 organisation.json      the organisation's name, website, hashtags, misheard forms (git-ignored)
-input/ work/ output/   files to be processed (input/reports/: a month's numbers), temporary
+input/ work/ output/   files to be processed (input/reports/: a month's numbers;
+                       input/insights/: a month's triggers), temporary
                        jobs, results (all git-ignored)
 ```

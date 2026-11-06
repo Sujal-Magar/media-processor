@@ -18,6 +18,8 @@
       "Bash(python3 processors/draft-report/finalize.py *)",
       "Bash(python3 processors/translate-subtitles/prepare.py *)",
       "Bash(python3 processors/translate-subtitles/finalize.py *)",
+      "Bash(python3 processors/draft-insights/prepare.py *)",
+      "Bash(python3 processors/draft-insights/finalize.py *)",
       "Bash(ffprobe *)",
       "mcp__elevenlabs__check_subscription",
       "mcp__elevenlabs__list_models",
@@ -31,6 +33,7 @@
       "Bash(python3 processors/generate-copy/generate.py *)",
       "Bash(python3 processors/draft-report/draft.py *)",
       "Bash(python3 processors/translate-subtitles/translate.py *)",
+      "Bash(python3 processors/draft-insights/draft.py *)",
       "Read(./output/**)"
     ],
     "deny": [

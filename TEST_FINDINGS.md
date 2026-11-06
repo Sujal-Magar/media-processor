@@ -1,4 +1,4 @@
-# Test findings: /generate-copy, /draft-report
+# Test findings: /generate-copy, /draft-report, /draft-insights
 
 Paid test campaign for the new `generate-copy` processor. Each run's result was reviewed
 read-only against `.claude/skills/generate-copy/SKILL.md`,
@@ -249,7 +249,732 @@ The session's "happened ?" for September is 4.
 - **Other:** both `metadata.json` are `complete` with `replaces` matching the archived
   run; `work/draft-report/` is empty; the token estimate was 2% and 2.5% over.
 
-## Fix status (2026-11-05, uncommitted; draft-report re-tested in runs 3 to 6)
+## draft-insights runs
+
+Paid test of `/draft-insights` (Pulse C18b) on the mock months: the triggers in
+`input/insights/2026-10.json` and the posts in `input/reports/2026-09.json` and
+`2026-10.json`. Reviewed read-only against `processors/draft-insights/{prepare,draft,finalize}.py`,
+`lib/numbers.py`, `lib/wording.py`, the skill, the design, the inputs and the Results card
+in `Assets and Results.dc.html:243-246`. The plan the model got was regenerated for free
+with `prepare.py --force`. It is identical, with the same `estimated_input_tokens` of
+4,956 and `replaces` equal to the result's `created_at`, and its job folder was then
+deleted. finalize's checks were replayed on the saved texts in a scratch script. Nothing
+paid was run again.
+
+| # | File | Status | Insights (trigger: hypotheses, request) | Checks | Tokens (est / in / out) | Verdict |
+| - | ---- | ------ | --------------------------------------- | ------ | ----------------------- | ------- |
+| 1 | `2026-10.json` (T1 engagement 2.2× on ci-2610-02, T2 52% gone in 3 s on ci-2610-03, T3 8 of 16 behind; BL 21 posts, 13 with complete data in the window; G1 to G24) | complete, 0 missing, 0 dropped, 0 held back, 0 not enough evidence; 3 review notes | T1: 2 (G2; G1, P7), 1 video; T2: 2 (G17, P8; G13, P8), 1 video; T3: 2 (G2; G4), 1 photo | 0. Correct for what the checks cover (the replay gives 0 too), but there are false negatives the checks cannot see (F-036, F-041) | 4,956 / 5,331 / 1,370 | Pass on numbers, refs, wording and names. Not usable as is. T1's second hypothesis and its brief rest on a visual-tag comparison that is wrong for video_003 (F-036). All three requests ask for 1 item, and T1 and T2 ask for the same video (F-037, F-038). The T1 client card states in count words a lead the counts contradict (F-041). T3's hypotheses do not address the trigger (F-042) |
+| 2 | `2026-10.json force` (same triggers and BL as run 1; G1 to G18, none on visual tags; replaces run 1, now in `history/20261106-083956/`) | complete, 0 missing, 0 dropped, 0 held back, 0 not enough evidence; 3 review notes | T1: 1 (G2, P7), 2 videos, tests 1; T2: 1 (G15, P8), 2 promo videos (en), tests 1; T3: none (why_unknown kept), 3 videos | 1: T1's card says "engagement rate", which is correct (F-048). Missed: T1 and T3 ask for the same videos (F-046) | 5,422 / 5,734 / 1,541 | Pass on numbers, refs, ratios, causes, names and structure. F-039, F-041, F-042, F-043 and F-044 hold. Usable after edits: both tests set a bar below the 90-day average (F-045), T1 and T3 both ask for educational visa-guidance videos (F-046), T2's hypothesis rests mostly on the flagged video and does not say so (F-051), and the card names the engagement rate (F-048) |
+| 3 | `2026-09.json`, first run (T1 48% gone in 3 s on ci-2609-01, T2 56% on ci-2609-06, T3 6 of 16, 10 behind; Partial ci-2609-04 held back; BL 17 posts, 5 with complete data in the window; G1 to G7, none on still watching) | complete, 0 missing, 0 dropped, 1 held back, 2 not enough evidence (T1, T2); 2 review notes | T1, T2: not enough evidence; T3: none (why_unknown kept), 2 photos | 1: T3's card says "engagement rate", which is correct (F-048). Missed: the photo category goes against G4 and G6 (F-047), and "pillars" on the card | 3,228 / 3,184 / 846 | Pass on numbers, refs, held back, and "not enough evidence" (correct and specific). T3 is not usable as is: photos contradict the format comparisons it was given (F-047), 2 for a 10-post gap (F-049), and the card gives a pillar comparison with "engagement rate" instead of its own trigger (F-048) |
+| 4 | `2026-10.json force`, after the F-045 to F-051 fixes (same triggers and BL; G1 to G17: T1's G1 to G4 worked out without P2 and P7, T2's G5 to G9 without P1 and P8, T3's G10 to G17; none on visual tags; replaces run 2, now in `history/20261106-085727/`) | complete, 0 missing, 0 dropped, 0 held back, 0 not enough evidence; 3 review notes | T1: 1 (G3), 2 videos, tests 1; T2: 1 (G7), 2 promo videos (en), tests 1; T3: none (why_unknown kept), 3 videos | 2: T1/T3 look-alike, real (0.35; F-046 still occurs). T2/T3 look-alike, false alarm (0.27 on "please, send, video(s), visa, explaining, different": F-055) | 5,288 / 5,555 / 1,751 | Pass on numbers, refs, ratios, causes, names, test bars, categories, quantities and the code-written card findings. Usable after edits: T1 and T3 still both ask for educational visa-advice videos (F-046), and T2's request changes the opening while its hypothesis and comparison are about the promo pillar (F-053) |
+| 5 | `2026-09.json force`, after the fixes (same triggers and BL; G1 to G7, all bearing on T3 only: none bears on T1 or T2; replaces run 3, now in `history/20261106-085818/`) | complete, 0 missing, 0 dropped, 1 held back, 1 not enough evidence (T2); 3 review notes | T1: 1 (P1 only, the flagged post), 2 promo videos with a new opening (en), tests 1; T3: none (reason left empty), 3 educational videos (en) | 1: "16" in T3's card action, a false alarm caused by the card-action rule (F-054) | 3,359 / 3,313 / 1,270 | Pass on numbers, refs, causes, names, held back, test bar, category and quantity. Not usable as is: T1's hypothesis rests only on the flagged post itself, where run 3's "not enough evidence" was right (F-052), and both card actions repeat the finding, T3's word for word (F-054) |
+| 6 | `2026-10.json force`, after the F-052 to F-055 fixes (same triggers and BL; G1 to G17 as in run 4: G1 to G4 bear on T1, G5 to G9 on T2, G10 to G17 on T3; replaces run 4, now in `history/20261106-091326/`) | complete, 0 missing, 0 dropped, 0 held back, 0 not enough evidence; 4 review notes | T1: 1 (G4), 2 "Nepali TikTok" educational videos (language any), tests 1; T2: 1 (G7), 2 English educational Instagram videos keeping P8's opening style, tests 1; T3: none (why_unknown empty, reason in note 1), 3 educational videos opening with a question | 3: T1/T2, T1/T3 and T2/T3 "both ask for educational videos". All three are true by the check's rule, but the overlap comes from the evidence, and the advice is wrong for T1/T2 (F-057). Repeat check: nothing, correctly | 5,357 / 5,615 / 1,535 | Pass on numbers, refs, ratios, causes, names, categories, quantities, bars, the code-written card findings and the card actions (no repeats). Every hypothesis cites a comparison for its trigger, and T2's request changes only the pillar. Usable after normal strategist edits: decide whether the client gets three asks for educational videos (F-057), raise T1's bar (F-058), set T1's language (F-059), and reword both hypotheses as reasons (F-053). Nothing blocks |
+| 7 | `2026-09.json force`, after the fixes (same triggers and BL; G1 to G7, all bearing on T3; prepare now tells the model that no comparison bears on T1 or T2; replaces run 5, now in `history/20261106-091405/`) | complete, 0 missing, 0 dropped, 1 held back, 2 not enough evidence (T1, T2, both by the model); 0 review notes | T1, T2: not enough evidence; T3: none (why_unknown kept), 3 English educational Instagram videos (G1 to G4) | 0. Correct: no repeat, no look-alike (one request), and nothing else was due | 3,483 / 3,417 / 663 | Pass on everything checked. Usable as it is: "not enough evidence" for both drop-off triggers is right (as in run 3), and T3's request follows `format_lean` and the comparisons it cites. Nothing blocks |
+| 8 | `2026-10.json force`, after the F-053 and F-057 to F-059 fixes and the video_003 re-tag (same triggers and BL; G1 to G17 as in run 6; P1 and P8 now carry video_003's new topic tags; replaces run 6, now in `history/20261106-093032/`) | complete, 0 missing, 0 dropped, 0 held back, 0 not enough evidence; 3 review notes; total ask "Requests for November 2026: 7 videos (T1 2, T2 2, T3 3)." | T1: 1 (G3, pillar), 2 educational Nepali TikTok videos (ne), tests 1, bar 5.94%; T2: 1 (G7, pillar), 2 English educational Instagram videos (en), tests 1, test at 67.53%; T3: none (why_unknown kept), 3 educational videos (any) | 0. Right for everything the checks cover (the replay gives 0 too). One false negative no check can see: T1's brief calls the flagged video "question-led", but P7 used a curiosity hook (F-060) | 5,452 / 5,711 / 1,564 | Pass on numbers, refs, ratios, causes, names, categories, quantities, languages, bars, the code-written card findings and card actions. F-057, F-058 and F-059 confirmed fixed, and both hypotheses are now reasons (F-053). Usable after one small strategist edit: take "question-led approach" out of T1's brief (F-060). Optional: different titles for T1 and T2 (both "2 more educational videos"), and decide on the 7-video total ask. Nothing blocks |
+| 9 | `2026-09.json force`, after the same fixes (same triggers and BL; G1 to G7, all bearing on T3; P1 now carries video_003's new topic tags; replaces run 7, now in `history/20261106-093102/`) | complete, 0 missing, 0 dropped, 1 held back, 2 not enough evidence (T1, T2, both by the model); 2 review notes; total ask "Requests for October 2026: 3 videos (T3 3)." | T1, T2: not enough evidence; T3: none (why_unknown kept), 3 educational videos (any; G3, G5, G4, G6, with P2 as the model) | 0. Correct: one request, no hypotheses, nothing else was due | 3,579 / 3,510 / 729 | Pass on everything checked. Usable as it is, as run 7 was. Nothing blocks |
+
+What was checked and passes:
+
+- **Numbers:** every number in all 36 texts was checked by hand against the regenerated
+  refs, and each one is in what its sentence cites:
+  - observations: 10.23%, 2.2×, 4.7% (T1, BL); 52%, 48%, 58% (T2, BL); 8 of 16 (T3)
+  - hypotheses: 6 and 7 posts, 6.92% and 3.43% (G2); 4 posts across 2 videos and 2
+    posts from 1 video (G1); 3 posts from 2 videos (G17); 4 posts (G13); 6 and 7 posts
+    (G2, G4)
+  - request titles: 1, the quantity
+  - cards: 48% and 3 seconds (T2); 8 and 16 (T3)
+
+  The only ratio is "2.2×", in T1's observation, which cites T1. There is no "twice",
+  "half" or "double". The replay of `number_checks`, `cited_number_checks` and
+  `ratio_checks` is empty.
+- **Hypotheses:** all 6 say "may". Each has a confirm_if and a refute_if, cites a G that
+  bears on its trigger, and points the right way on the right measure:
+  - T1: engagement (G2, G1)
+  - T2: still watching after 3 s (G17, G13)
+  - T3: engagement and reach (G2, G4)
+
+  Each states its post counts. The two that rest on 2 or 3 posts on a side (T1 H2,
+  T2 H1) call the pattern early, and so do T1 H1 and T2 H2. T1 H2 and T2 H1 give their
+  counts in videos ("4 posts across 2 videos", "3 posts from 2 videos"). The other four
+  do not (F-040).
+- **Causes:** outside the hypotheses, nothing states a cause, including the wording the
+  regex misses: no "since", "as a result", "helped", "boosted" or "thanks to". "So we
+  can plan" and "to help us plan" in T3 give a purpose. "May have helped" appears only
+  inside T1 H2. The replay of `wording_checks` is empty.
+- **Observations:** each states its trigger correctly. T2 calls P8 "the video posted
+  again on Instagram", and P8 is video_003, first posted as P1.
+- **Client cards:** none uses engagement rate, retention, trigger, baseline, quota,
+  impressions or a reference code. No person is named, including the strategist. No
+  card promises a visa outcome. Each button has 4 words ("Send us a video" twice, "Send
+  us a post"). They are weaker than the Pulse card (F-041, F-043).
+- **Reference codes:** none appear in any text, and the replay of `reference_checks` is
+  empty. `insights.md` shows the refs only in italics after each hypothesis, and in the
+  References list.
+- **Request fields:** category `video`, `video` and `photo`; quantity 1 each, which is
+  in the allowed 1 to 3; language `any`; due 2026-11. Each brief is one sentence, and
+  the evidence lists hold 5, 2 and 2 refs.
+- **`review_notes`:** all 3 are stored in full in `insights.json` and `insights.md`
+  ("…do not imply or promise visa outcomes."). The cut was on screen only. Note 2 flags
+  the repeated videos generically, and note 1 says the evidence does not explain the
+  shortfall (F-042).
+- **`metadata.json`:** `status` complete and `replaces` null. It records the model
+  (gpt-6-luna, low), the inputs (both window reports with hashes, the 6 posts' topics,
+  copy and visual times, and the organisation), the baseline, the quota, the triggers
+  and the warning. It holds no `context`, `refs`, `allowed_numbers` or
+  `general_numbers`. `usage` is in `insights.json`. `work/draft-insights/` is empty, as
+  is `history/` (this is the first result).
+- **Pasted summary:** it matches the files: status complete; each trigger's label as
+  prepare words it; 2 hypotheses each; 1 video, 1 video, 1 photo; nothing in not enough
+  evidence, held back, dropped, missing or checks; and 3 review notes. The session
+  paraphrased prepare's ready summary instead of pasting `summary_text`. This is the
+  F-010 pattern the user accepted, so it is a note, not a finding. Only the session's
+  short version was available to check. The line that mattered was the warning "The
+  baseline counts 21 posts in the window; input/reports/ holds 14 of them", and nothing
+  given contradicts it.
+
+### Re-test (runs 2 and 3)
+
+Reviewed read-only in the same way as run 1. Both plans were regenerated for free with
+`prepare.py --force`. The estimates, 5,422 (October) and 3,228 (September), equal the
+runs' `estimated_input_tokens`. `replaces` equals each result's `created_at`. Both job
+folders were deleted, and `work/draft-insights/` is empty. Nothing paid was run.
+
+What now passes:
+
+- **Numbers:** every number in all texts was checked by hand against the regenerated
+  refs, and each one is in what its sentence cites. The quantity appears only in request
+  and card texts.
+  - October:
+    - 10.23%, 2.2× and 4.7% (T1, BL)
+    - 48%, 52% and 58% (T2, BL)
+    - 8 and 16 (T3)
+    - 6.92%, 3.43% and 4 pieces of content (G2)
+    - 68.7%, 54.67% and 2 pieces of content (G15)
+    - the tests' 3.43% and 54.67% (each cites its own G)
+    - quantities 2, 2 and 3
+  - September: 6, 16 and 10 (T3); 1.5× (G5) and 1.9× (G3); quantity 2.
+
+  The only ratios are 2.2×, 1.5× and 1.9×, each in a sentence that cites the T or G that
+  gives it. There is no "twice", "half" or "double".
+- **Comparisons (F-036, F-040):** neither plan has a visual-tag comparison: October has
+  G1 to G18 and September has G1 to G7. Every side says "N posts of M pieces of content"
+  when the two differ. Every label for a comparison that bears on a post trigger says
+  which side holds that trigger's own post and its twin. Video vs picture comparisons
+  exist in both months (October G1 and G7, September G4 and G6).
+- **Hypotheses:** October has 2, one per post trigger. Each says "may", gives its pieces
+  of content and calls the pattern early. T1's says the comparison "includes the flagged
+  post itself" (T2's does not: F-051). Each test names its measure, a number to beat and
+  "2 new" posts (F-039; the bar is weak: F-045).
+- **Quota trigger (F-042):** neither month has a hypothesis for it. `why_unknown` says
+  what the material lacks (what was sent, approvals, the schedule), and `insights.md`
+  shows "Why posting fell behind: the numbers cannot say". Nothing was dropped, so the
+  model wrote no hypotheses for it.
+- **Not enough evidence (September):** the answer is correct. None of G1 to G7 measures
+  still watching. The 3 videos (P1 video_003, P2 video_014, P5 YouTube with no video in
+  `input/`) cannot form 2 pieces of content on each side, so nothing bears on T1 or T2.
+  Both reasons are specific: T1 has "no comparison that connects either [opening or
+  pictures] to people still watching". T2 has "no topic, opening, picture details", and
+  P5 has no video in `input/`.
+- **Requests (F-037, F-038):**
+  - `tests` is 1, 1 and 0. Quantities are 2, 2 and 3 in October and 2 in September.
+  - T2 is what F-038 asked for: "two English promo videos in the same success-story
+    style, each opening with a question instead of a statement".
+  - T1 and T2 now differ, but T1 and T3 do not (F-046). September's category is not
+    backed (F-047).
+- **Cards (F-041, F-043):**
+  - Every finding carries a number or ratio ("2.2× your usual 4.7%", "48% … compared
+    with your usual 58%", "8 of the 16").
+  - Every button gives a quantity: "Send 2 more videos", "Send 2 promo videos", "Send 3
+    videos", "Send us 2 posts".
+  - Posting is "we" ("We posted 8 of the 16 posts planned for October").
+  - There are no slots and no count words for engagement.
+  - Both months name "engagement rate" (F-048).
+- **Causes, names and refs:** there is no causal wording outside the hypotheses. "So 52%
+  stopped watching" is arithmetic, and "so we can catch up" gives a purpose. No person
+  is named, no reference code is in any text, and nothing promises a visa outcome.
+- **Held back:** September's Partial ci-2609-04 is in `held_back`, out of every
+  comparison and never mentioned.
+- **`metadata.json`:**
+  - Both have `status` complete.
+  - October's `replaces` is 2026-11-06T08:39:56, which is run 1's `created_at`. Run 1's
+    three files are in `history/20261106-083956/`, with their own `replaces` null.
+  - September's `replaces` is null, and it has no `history/`.
+  - `window_reports` is right: both reports for October, and for September only
+    2026-09.json, the only report in its window.
+  - Neither holds `context`, `refs`, `allowed_numbers` or `general_numbers`.
+- **`insights.md` (F-044):** October's header lists reports/2026-09.json and
+  reports/2026-10.json.
+- **Tokens:** October's estimate ran 5.4% under (run 1: 7.6%). September's ran 1.4% over.
+- **Pasted summaries:** both match the files. October's output tokens (1,541) were not
+  shown, and its truncated T3 request is 3 videos.
+- **False negatives (finalize):**
+  - T1's and T3's requests ask for the same thing (F-046).
+  - The photo category goes against the format comparisons (F-047).
+  - The test bars are below the 90-day average (F-045).
+  - T2's hypothesis does not say its comparison holds the flagged video (F-051).
+  - "pillars" is on September's card (F-048).
+
+### Re-test (runs 4 and 5)
+
+Reviewed read-only in the same way. The pasted terminal output was garbled, so only the
+files were trusted. Both plans were regenerated for free with `prepare.py --force`. The
+estimates, 5,288 (October) and 3,359 (September), equal the runs'
+`estimated_input_tokens`. `replaces` equals each result's `created_at`. Both job folders
+were deleted, and `work/draft-insights/` is empty. A replay of finalize's checks on the
+saved results, with the regenerated plans, gives exactly the saved checks (2 and 1).
+Nothing paid was run.
+
+What now passes:
+
+- **Numbers:** every number in all texts was checked by hand against the regenerated
+  refs, and each one is in what its sentence cites.
+  - October:
+    - 10.23%, 2.2× and 4.7% (T1's observation, T1)
+    - 3 pieces of content and 5.94% (G3), and the bar 4.7% (T1, BL) in T1's test
+    - 52% and 3 seconds (T2)
+    - 2 pieces of content (G7), and the bar 58% (T2, BL) in T2's test
+    - 8 and 16 (T3, the code's sentence)
+    - quantities 2, 2 and 3 in the titles, briefs, card actions and buttons
+  - September:
+    - 48%, 52% and 57% (T1's observation and card action, which cite T1 and P1)
+    - 57% in T1's test
+    - 6 and 16 (T3; in the card action "16" is flagged, a false alarm: F-054)
+    - quantities 2 and 3
+
+  The only ratio is 2.2×, in October's T1 observation (which cites T1) and in the code's
+  card finding. There is no "twice", "half" or "double".
+- **Causes, names and refs:** "as" and "since" appear only inside hypotheses. October's
+  `why_unknown` has "because it does not include what you sent", which explains missing
+  data. No person is named, no reference code is in any text, and nothing promises a visa
+  outcome. "catch up" appears nowhere.
+- **Fixes F-045 to F-051 on the actual output:**
+  - **Bars (F-045):** every test is at or above its trigger's bar: October T1 "each above
+    5.94%" (bar 4.7%), T2 "more than 58%" (bar 58%), September T1 "above 57%" (bar 57%).
+    Each refute_if sits at the average (4.7%, 58%, 57%). The bar check fired on nothing,
+    and nothing was due.
+  - **Card finding (F-048):** all 5 card findings are prepare's `card` sentence, word for
+    word. No card says "engagement rate" or "pillars". October's T2 observation copies
+    the same sentence, which is fine for the strategist.
+  - **Own post left out (F-051):** October T1's G1 to G4 are "worked out without the
+    flagged post (P2, P7)", and T2's G5 to G9 "without the flagged post (P1, P8)". The
+    posts lists confirm it: G3 holds P3, P6, P9 and P11. No hypothesis cites a comparison
+    that holds its own post. But September's T1 hypothesis now cites the post itself
+    (F-052).
+  - **Quota request (F-049):** 3 in both months (gaps 8 and 10), taken from the trigger.
+  - **Category (F-047):** `format_lean` is video in both months, and all 5 requests are
+    video. September's T3 moved from photos to videos.
+  - **Visual tags (F-050):** video_003 (P1, P8) is now "sitting, speaking-to-camera,
+    office, white-suit, blinds, certificate, chair, desk, glasses, keyboard,
+    microphone, person": 12 of its 13 tags tied at 48.2 s, activities first. Only
+    "plant" is cut. Neither plan has a visual-tag comparison.
+  - **"catch up":** in no text in either month. The cards say "this month" (October)
+    and "for October" (September's T3).
+- **Hypotheses:** 3 in all, 1 per insight. Each says "may", gives its pieces of content
+  (3, 2, "one piece of video content") and calls the pattern early or not established.
+  Each test names its measure, the bar and "2 new" posts.
+- **Requests:** each tests one hypothesis (`tests` 1, 1, 0 / 1, 0) and keeps the
+  flagged kind. October T2 and September T1 ask for English promo success-story videos,
+  and October T1 asks for educational videos with `language` any. September's two
+  requests differ (promo vs educational). October's T1 and T3 do not (F-046 still
+  occurs), and the T2/T3 check is a false alarm (F-055).
+- **Not enough evidence (September T2):** correct and specific: "no opening, topic, or
+  comparison". No video of P5 is in `input/`.
+- **Held back:** September's Partial ci-2609-04 is in `held_back`, out of every
+  comparison and never mentioned.
+- **`metadata.json`:** both have `status` complete, `replaces` set to the run before
+  (2026-11-06T08:57:27 for October, 08:58:18 for September), and the history folders
+  hold runs 1, 2 and 3 unchanged. `window_reports` is right (both reports for October,
+  only 2026-09.json for September). `triggers` now records `card`, `bar` and
+  `quantity`, and `format_lean` is kept. Neither holds `context`, `refs`,
+  `allowed_numbers` or `general_numbers`. Both `insights.md` headers list every window
+  report.
+- **Tokens:** October's estimate ran 5.0% under (5,288 against 5,555; run 2: 5.4%).
+  September's ran 1.4% over (3,359 against 3,313; run 3: 1.4%). Output tokens rose to
+  1,751 and 1,270 (runs 2 and 3: 1,541 and 846).
+- **Session summaries:** both match the files: the hypotheses, quantities, `tests`,
+  held back, not enough evidence, tokens, checks and review notes.
+
+September T1's new hypothesis (F-052): it cites only P1, which is T1's own post. Its
+material is the opening hook "(statement)". In September none of G1 to G7 bears on T1
+or T2. All seven are marked "bears on T3", and with P1 left out a drop-off comparison
+cannot have 2 pieces of content on each side (the other videos are P2 and P5). So no
+comparison bears on a drop-off trigger at all. The plan T1 got is, apart from the
+excluded own post, the one run 3 answered "not enough evidence" to. Only the model's
+answer changed. The model's own note 2 says it "is based on one piece of content and
+does not establish a pattern", and in the same answer it gave T2 "not enough evidence"
+for the same lack. Run 3's answer was the right one. Finalize should enforce it, because
+the prompt alone gave both answers on the same plan.
+
+October's look-alike checks: T1/T3 is a real duplicate. Both ask for educational videos
+on practical visa-application questions, and T3's own review note says to check it. T2/T3
+is a false alarm: a promo success-story video with a new opening against educational
+how-to videos. Its 0.27 comes from request boilerplate. The scores are title and brief
+words of 4 or more letters minus `FILLER`, Jaccard, as in `same_request_checks`:
+
+| Run | Pair | Categories | Shared / all | Score | Same request? | Flagged at 0.25 |
+| --- | ---- | ---------- | ------------ | ----- | ------------- | --------------- |
+| 1 | T1/T2 | video, video | 9/18 | 0.50 | yes | yes (replay) |
+| 1 | T1/T3 | video, photo | 3/28 | 0.11 | no | no (categories differ) |
+| 1 | T2/T3 | video, photo | 5/23 | 0.22 | no | no (categories differ) |
+| 2 | T1/T2 | video, video | 4/22 | 0.18 | no | no |
+| 2 | T1/T3 | video, video | 7/25 | 0.28 | yes | yes (replay) |
+| 2 | T2/T3 | video, video | 2/28 | 0.07 | no | no |
+| 4 | T1/T2 | video, video | 6/26 | 0.23 | no | no |
+| 4 | T1/T3 | video, video | 8/23 | 0.35 | yes | yes |
+| 4 | T2/T3 | video, video | 7/26 | 0.27 | no | yes (false alarm) |
+| 5 | T1/T3 | video, video | 5/29 | 0.17 | no | no |
+
+Run 3 has one request. Duplicates score 0.28 to 0.50, and different requests up to 0.27,
+so 0.25 no longer separates them. Run 4's T1/T2 (0.23) is close too. The shared words of
+the different pairs are boilerplate: please, send, video(s), visa, explaining, different,
+like. See F-055.
+
+September's "16" check is a false alarm caused by the card rule. T3's card action is "We
+posted 6 of the 16 posts planned for September; send us three educational videos for
+October, and we'll post them." Card action and button texts are checked against the
+action's evidence (G2 to G6) plus the quantity. The finding's 16 (T3) is not there.
+"6" passes only because G3's 5.76% rounds to 6. Allowing the trigger's numbers clears
+the check, and nothing else changes in either month (replayed). The real defect is that
+the action repeats the finding (F-054).
+
+Client cards:
+
+| Run | Trigger | Action | Button |
+| --- | ------- | ------ | ------ |
+| 4 | T1 | "Send us two more educational visa-advice videos this month, and we'll post them for you." | "Send us 2 videos" |
+| 4 | T2 | "Send us two English promo videos with a different opening this month, and we'll post them for you." | "Send us 2 promo videos" |
+| 4 | T3 | "Please send us three educational videos this month, and we'll post them for you." | "Send us 3 videos" |
+| 5 | T1 | "Your English Instagram video had 52% of viewers still watching after 3 seconds, below the 90-day average of 57%; send us two more this month with a different opening, and we'll post them." | "Send us 2 more videos" |
+| 5 | T3 | "We posted 6 of the 16 posts planned for September; send us three educational videos for October, and we'll post them." | "Send us 3 educational videos" |
+
+- Each action asks for the request with its quantity, and each button has 4 or 5 words
+  with a number. They are plain English, use "we" for posting, and promise nothing
+  about visas or catching up.
+- October's three actions follow from the finding without repeating it.
+- September's two do repeat it. The rendered T3 card reads "We posted 6 of the 16 posts
+  planned for September. We posted 6 of the 16 posts planned for September; send us…".
+  The T1 card gives the same drop-off twice and puts "90-day average" on the card, where
+  the code's wording is "your usual" (F-054).
+- October's T1 action asks for "educational visa-advice videos", which is the request,
+  not the "Nepali TikTok" the finding names. It is consistent with the request
+  (`language` any).
+
+False negatives (finalize):
+
+- September T1's hypothesis cites no comparison, only the flagged post (F-052).
+- October T2's request changes the opening while its hypothesis and comparison are about
+  the pillar. September T1's request does the same with no comparison (F-053).
+- September's card actions repeat the finding (F-054).
+- September T3's `why_unknown` is empty: the model put its reason in review note 1, and
+  `insights.md` shows only "the numbers cannot say." Nothing flags it. It is harmless
+  here, so it is a note, not a finding.
+- video_003's topic tags, made before `organisation.json`, send the misheard
+  "cleary-consulting-group" to the model in both months (F-056; no output used it).
+
+### Re-test (runs 6 and 7)
+
+Reviewed read-only in the same way. The pasted output was garbled, so only the files
+were trusted. Both plans were regenerated for free with `prepare.py --force`. The
+estimates, 5,357 (October) and 3,483 (September), equal the runs'
+`estimated_input_tokens`, and `replaces` equals each result's `created_at`. Both job
+folders were deleted, and `work/draft-insights/` is empty. A replay of finalize's checks
+on the saved results, with the regenerated plans, gives exactly the saved checks (3 and
+0). Nothing paid was run.
+
+What now passes:
+
+- **Numbers:** every number in all texts was checked by hand against the regenerated
+  refs, and each one is in what its sentence cites. The replay of the number, cited
+  number and ratio checks is empty.
+  - October:
+    - 10.23%, 2.2×, 90 and 4.7% (T1's observation: T1, BL)
+    - 6 posts and 4 pieces of content (G4) in T1's hypothesis
+    - 4.7% and 2 new posts in T1's test (the bar)
+    - 52%, 48% and 3 seconds (T2)
+    - 2 posts and 2 pieces of content (G7), and 58% (the bar) in T2's test
+    - 8, 16 and 8 behind (T3)
+    - quantities 2, 2 and 3 in titles, briefs, card actions and buttons
+  - September: 6, 16 and 10 (T3), and quantity 3.
+
+  The only ratio is 2.2×, in T1's observation and the code's card finding. There is no
+  "twice", "half" or "double".
+- **Causes, names and refs:** "since" appears only inside the two hypotheses.
+  September's `why_unknown` has "because it does not include what you sent", which
+  explains missing data. No person is named, the organisation is not named, and no
+  reference code is in any text. Nothing promises a visa outcome or to catch up.
+- **Categories and quantities:** all 4 requests are video, which follows `format_lean`
+  (video in both months). The quota request is 3 in both months, from the trigger. The
+  post-trigger requests are 2 each.
+- **Card findings and actions:** all 4 findings are prepare's `card` sentence. The 4
+  actions start from the ask, carry only the quantity, and say "you" and "we":
+  - "You could send us two more videos in this style, and we'll post them for you next
+    month." [Send us 2 videos]
+  - "You could send us two English educational videos, and we'll post them for you next
+    month." [Send us 2 videos]
+  - "Please send us three educational videos that open with a question, and we'll plan
+    their posts together for next month." [Send us 3 videos]
+  - "Send us three more English educational videos, and we'll post them on Instagram."
+    [Send us 3 videos]
+- **Held back:** September's Partial ci-2609-04 is in `held_back`, out of every
+  comparison and never mentioned.
+- **`metadata.json`:** both have `status` complete. `replaces` is 2026-11-06T09:13:26
+  (October, run 4) and 09:14:05 (September, run 5), and the history folders hold runs 1
+  to 5 unchanged (run 4's own `replaces` is still run 2's 08:57:27). `window_reports` is
+  right: both reports for October, only 2026-09.json for September. `triggers` records
+  `card`, `bar` and `quantity`, and `format_lean` and `pillars` are kept. Neither holds
+  `context`, `refs`, `allowed_numbers` or `general_numbers`. Both `insights.md` headers
+  list every window report.
+- **Tokens:** October's estimate ran 4.6% under (5,357 against 5,615; run 4: 5.0%).
+  September's ran 1.9% over (3,483 against 3,417; run 5: 1.4%). Output tokens were
+  1,535 and 663 (runs 4 and 5: 1,751 and 1,270). September's fell because two triggers
+  are now answered in one sentence each.
+
+F-052 to F-055 on the actual output:
+
+- **A comparison for every hypothesis (F-052):** both hypotheses cite one comparison
+  that bears on their trigger: T1 cites G4 (bears on T1) and T2 cites G7 (bears on T2).
+  Neither cites a post alone.
+- **September T1 and T2 (F-052):** both are "not enough evidence", and the model decided
+  it, not the code. The reason, "No comparison bears on this result, and the video
+  cannot explain its own result.", is the model's. The code's would end "(decided by
+  the scripts)". The model followed prepare's new line under each trigger, "no
+  comparison bears on this trigger: answer enough_evidence false". The code's fallback
+  was not exercised. It was checked by a replay of `clean_answer` with run 5's T1 answer
+  (hypothesis citing only P1) on the regenerated plan. The hypothesis goes to `dropped`
+  with "it cites no comparison for this trigger", and T1 goes to `not_enough_evidence`
+  with the code's reason. Both reasons are correct, but they are now identical and
+  generic: run 5's "no opening, topic, or comparison" for T2 was more specific.
+- **Each request changes only what its comparison is about (F-053):**
+  - T2 (G7, pillar): it changes only the pillar: "keeping the format, platform,
+    language and opening style of your flagged video, but changing its pillar from
+    promotional to educational".
+  - T1 (G4, format): P7 is already a video, so there is nothing to change. The request
+    repeats P7 ("keeping its topic and opening approach"), which the rule allows.
+  - Neither post-trigger request changes the opening, and no "another opening" wording
+    appears. T3's question opening comes from G16, and the quota request asks for what
+    works best, so the rule does not apply to it.
+  - Both hypotheses are still advice, not reasons: "Video format may be one factor worth
+    testing" and "A promotional pillar may be worth reconsidering". The HEDGE check
+    passes them on "may". This is F-053's second half, which the fix did not cover.
+- **Card actions (F-054):** the repeat check raised nothing, and that is right. No
+  action gives a trigger number other than the quantity: "two" and "three" match the
+  quantities 2 and 3. No action shares half its words with the finding. The most it
+  shares is "english" in T2's action, 1 of 9 words. "90-day" is still not in
+  `CLIENT_TERMS`, but no card used it (latent).
+- **Look-alike check (F-055):** it now reads the first pillar named in each title and
+  brief. In October that is "educational" for all three requests: T2's brief also says
+  "promotional", but its title names educational first. So the three checks are right
+  by the rule. September has one request and no check.
+
+Do all three October requests ask for educational videos? Yes:
+
+| Trigger | Request | Tests | Measure, bar | What sets it apart |
+| ------- | ------- | ----- | ------------ | ------------------ |
+| T1 | "2 more Nepali TikTok videos": "two educational TikTok videos in the same Nepali style as your successful video, keeping its topic and opening approach" | 1 (G4, video vs other formats) | engagement, 4.7% | TikTok, Nepali, P7's curiosity opening |
+| T2 | "2 educational Instagram videos": English, keeping P8's format, platform, language and opening style, pillar promo → educational | 1 (G7, promo vs other pillars) | still watching after 3 s, 58% | Instagram, English, P8's statement opening |
+| T3 | "3 question-hook educational videos": "open with a question, using the same platform, language and visual approach as each video you already make" | 0 (G16 question hook, G11 educational 2×) | none | a question opening |
+
+Each of the three follows its evidence:
+
+- T1's comparisons (G1 to G4) are all about P7's own features (video, educational), so
+  keeping the rest like P7 means an educational video.
+- G7's other side (P2, P6, P7, P11) is all educational, so changing only the pillar
+  means educational.
+- The quota request asks for "what the comparisons show works best", and the strongest
+  comparison is G11 (educational, 2×).
+
+The instruction also says "never the same kind of post for two triggers". With one
+pillar leading every comparison, that rule cannot be met together with the other three,
+and the model broke it. Its own note 4 asks the strategist to "confirm the three
+requested items are … distinct from the other requests". October has had a shared-kind
+pair in every run: run 1 T1/T2, run 2 T1/T3, run 4 T1/T3, and run 6 all three. So this
+is a design problem, not model noise (F-057).
+
+Does T2's request still test its hypothesis? Yes, and it is the cleanest test of the
+three:
+
+- It holds P8's platform, language, format and statement opening, and changes the one
+  thing G7 is about.
+- If 2 such educational videos average more than 58% still watching after 3 seconds,
+  the pillar is supported against P8's 48%. If not, it counts against it.
+- It is "only what the comparison is about": the pillar is the only change.
+- Two caveats for the strategist:
+  - The new videos cannot keep P8's opening line itself (a visa-grant statement), only
+    its statement style.
+  - It stops testing promos: nothing tells the client what to do about the success-story
+    promo that lost viewers.
+- Its controls are only in the brief. The card says "two English educational videos".
+  T3's card asks in the same month for educational videos that open with a question, so
+  a client who sends question-opening videos for both breaks T2's test without knowing.
+
+Recommendation on the overlap: leave the decision to the strategist, but give them a
+correct check. Do not merge the requests in code, and do not let T3 take them over:
+
+- A code merge would destroy two different tests. T1 measures engagement at 4.7% on a
+  Nepali TikTok repeat. T2 measures 3-second retention at 58% on an English Instagram
+  video with a statement opening. One merged request would test neither.
+- If T3 took over, two tests would become one untested ask (`tests` 0) with no confirm
+  or refute.
+- The quota request is the one that overlaps by design. It is told to ask for what works
+  best, and a positive post trigger's request will usually be exactly that.
+- So the design should accept a shared kind when the evidence points there. Each brief
+  (and each card, for a test) then says what sets it apart. The check should alert only
+  where nothing sets two requests apart. The month's total ask should be one
+  informational line, not three "merge them" alerts. The current advice, "merge them or
+  make each test its own hypothesis", is wrong for T1/T2, which already test their own.
+  Three such alerts on an overlap the evidence produces are the F-029 pattern. See F-057.
+
+September T3 alone is usable:
+
+- "3 more educational Instagram videos" (English) cites G1 and G2 (Instagram: reach
+  3.2×, engagement 2×), G3 (educational: engagement 1.9×) and G4 (video: reach 1.8×).
+  All four bear on T3.
+- Its category is video, which follows `format_lean` (video, G4 and G6). Its pillar,
+  platform and format each follow a cited comparison.
+- English is not backed by a language comparison, but all 5 September posts are in
+  English, and the instruction restricts only "ne".
+- The topic ("a practical question about preparing a visa application") comes from P2's
+  material, not from a comparison. The strategist may change it.
+- `why_unknown` is kept, and the card does not repeat the finding.
+- With no hypotheses and no review notes, nothing says that every comparison has 2 or 3
+  posts on a side. That is acceptable for a request that tests nothing.
+
+T1's test is weak (F-058). The bar it uses is the 90-day average (4.7%). That is allowed,
+but G4's own videos, without P7, already average 5.02%. So an ordinary video would
+confirm "video format" as the reason for a 2.2× result, and a 1.4× comparison cannot
+account for 2.2×. Run 4's T1 used G3 and set the bar at its 5.94%. The model's note 2
+says as much: "check whether the proposed repeat is a useful test".
+
+T1's request asks for Nepali TikTok videos with `language` any (F-059). The instruction
+allows "ne" only when a comparison about Nepali posts supports it. No such comparison
+bears on T1: with P7 left out, only one other Nepali post remains (F-051). But the same
+instruction also says to keep the rest like the flagged post.
+
+False alarms: the three look-alike checks are true by their rule, but their advice is
+wrong for T1/T2, and the overlap is by design (F-057). There are no other checks.
+
+False negatives (finalize):
+
+- T1's bar is below what its comparison's own side already averages (F-058).
+- T1's language field disagrees with its title and brief (F-059).
+- Both hypotheses are advice ("worth testing", "worth reconsidering"), not reasons
+  (F-053, second half).
+- October's `why_unknown` is empty again: the reason went to review note 1, and
+  `insights.md` shows only "the numbers cannot say." That is 2 of the last 4 quota
+  insights (run 5 and run 6). It is still harmless, so it is a note.
+- video_003's outdated topic tags still send "cleary-consulting-group" in both plans
+  (F-056). No text used it.
+
+Overall: September (run 7) is usable as it is. October (run 6) is usable after normal
+strategist edits:
+
+- choose whether the client sees one or three asks for educational videos
+- raise T1's bar to 5.02% or cite G3
+- set T1's language to ne
+- reword the two hypotheses as reasons
+
+Nothing blocks either month.
+
+### Re-test (runs 8 and 9)
+
+Reviewed read-only in the same way. The pasted output was garbled, so only the files
+were trusted. Both plans were regenerated for free with `prepare.py --force`. The
+estimates, 5,452 (October) and 3,579 (September), equal the runs'
+`estimated_input_tokens`, and `replaces` equals each result's `created_at` (09:45:18 and
+09:45:47). Both job folders were deleted, and `work/draft-insights/` is empty. A replay
+of finalize's checks on the saved results, with the regenerated plans, gives exactly the
+saved checks (0 and 0) and the same `total_ask`. Nothing paid was run.
+
+The video_003 re-tag (F-056):
+
+- `/tag-topics input/video_003.MOV force` gave 7 tags for 1,453 input and 416 output
+  tokens (estimate 1,543, 6% over). The old result is in `history/20261105-084233/`, and
+  `metadata.replaces` is its 2026-11-05T08:42:33. The new `inputs` record
+  `organisation.json`, so the result is no longer outdated.
+- The tags and their evidence:
+  - type: educational-advice (S4, S6), advertisement (S6, V:speaking-to-camera)
+  - topic: student-visa (S1 to S6), visa-success-story (S2, S5; `new`), further-study
+    (S4 to S6), visa-application (S6)
+  - entity: tilicho-consulting-group (S6)
+
+  The old result also had 7 tags, but every one cited only S1 (F-009). Its entity was
+  cleary-consulting-group, and it had bachelor-degree and masters-degree topics.
+- **The misheard name is gone.** S6 ends "you can contact Cleary Consulting Group". The
+  entity is spelled as `organisation.json` gives it, and it cites S6, the sentence that
+  names the organisation. "Cleary" is not in `heard_as` (Tilottama, तिलोत्तमा), so the model
+  corrected it from the ORGANISATION section, not from a listed mishearing.
+- **Rules:** every tag is English, lowercase and hyphenated. Each cites the sentence that
+  states it, checked against the transcript's sentences S1 to S7. No person is named in
+  the tags or the summary ("A consultancy describes helping a client…").
+- **One judgement call (a note, not a finding):** educational-advice (high) is given to a
+  video whose Pulse pillar is Promo. It cites S4 (guidance given to that client) and S6
+  (the invitation to get in touch). The comparisons take the pillar from Pulse, not from
+  the tags, and no text in runs 8 or 9 used the type.
+- **The October and September material:** P1 and P8 carry the new tags and summary. A
+  search of both regenerated plans finds no "cleary", "trilochan" or other wrong form.
+  "Tilottama" and "तिलोत्तमा" appear only in the ORGANISATION section. Both
+  `metadata.json` files record topics created 2026-11-06T09:44:50 for ci-2609-01 and
+  ci-2610-03, so both runs used the new tags. All three videos in the reports (003, 007
+  and 014) now have topic results made with `organisation.json`.
+- **Residual (latent, outside these months):** the tag library still holds
+  trilochan-consulting-group, from video_004's result. That result was made on
+  2026-11-05, before `organisation.json` was an input, and video_004 is in no report. The
+  re-tag offered it to the model as an existing entity tag (uses 1). video_004, video_006
+  and video_008 are still outdated. draft-insights' prepare still does not warn about a
+  post's outdated topic tags, but every reported video is now current.
+
+What passes in runs 8 and 9:
+
+- **Numbers:** every number in all texts was checked by hand against the regenerated
+  refs, and each one is in what its sentence cites. The replay of the number, cited
+  number and ratio checks is empty.
+  - October:
+    - 10.23%, 2.2×, 90 and 4.7% (T1's observation)
+    - 5.94%, 3.43% and 3 pieces of content (G3) in T1's hypothesis
+    - 2 and 5.94% in T1's test
+    - 52%, 48% and 3 seconds (T2's observation)
+    - 49.65%, 67.53% and 2 pieces of content (G7) in T2's hypothesis
+    - 2 and 67.53% in T2's test
+    - 8 and 16 (T3)
+    - quantities 2, 2 and 3 in titles, briefs, card actions and buttons
+  - September: 6, 16 and 10 (T3), and quantity 3.
+
+  The only ratio is 2.2×, in T1's observation and the code's card finding. There is no
+  "twice", "half" or "double".
+- **Causes, names, refs and promises:** "as" and "contributed" appear only inside the
+  hypotheses. Both `why_unknown` say "because it does not include what you sent,
+  approvals, or the schedule", which explains missing data. No person or organisation is
+  named, and no reference code is in any text. Nothing promises a visa outcome or to
+  catch up. The cards promise only "we'll post them".
+- **Categories, quantities and languages:**
+  - All 4 requests are video, which follows `format_lean` (video in both months).
+  - The quota request is 3 in both months, from the trigger. The post-trigger requests
+    are 2 each.
+  - October T1 is ne (its brief names Nepali), T2 is en (English), and T3 is any. It
+    names neither, and neither does September's T3. A replay of `language_of` agrees
+    with each field.
+- **A comparison for every hypothesis:** T1 cites G3 (pillar, engagement, bears on T1).
+  T2 cites G7 (pillar, still watching after 3 s, bears on T2). Both point the right way
+  on their trigger's measure, give their pieces of content and call the pattern early.
+- **Test bars:**
+
+  | Trigger | Measure | 90-day average | Cited group's average | Bar | The test |
+  | ------- | ------- | -------------- | --------------------- | --- | -------- |
+  | T1 | engagement | 4.7% | G3 educational 5.94% | 5.94% | above 5.94% |
+  | T2 | still watching after 3 s | 58% | G7 promo 49.65% | 58% | above 67.53% (the other pillars' average, the side the request asks for) |
+
+  Both tests are at or above their bar, and the bar check rightly fired on nothing. An
+  ordinary English educational Instagram video already holds about 70% (G8's
+  Instagram side is 69.95%), so T2's test would usually pass. That is how a drop-off test
+  is meant to work: it asks whether changing only the pillar brings the post back to
+  normal (F-058 kept it this way on purpose).
+- **Card findings and actions:** all 4 findings are prepare's `card` sentence word for
+  word. The 4 actions start from the ask and carry only the quantity. The replay of the
+  repeat check is empty:
+  - "Send us two more educational videos this month, and we'll post them on TikTok."
+    [Send us 2 more videos]
+  - "Send us two more educational videos this month, and we'll post them on Instagram."
+    [Send us 2 more videos]
+  - "Send us three educational videos this month, and we'll post them for you." [Send
+    us 3 more videos]
+  - September: "Send us three educational videos on different practical
+    visa-application questions, and we'll post them for you." [Send us 3 videos]
+- **Held back and not enough evidence (September):** the Partial ci-2609-04 is in
+  `held_back`, left out of every comparison and never mentioned. T1 and T2 are "not
+  enough evidence", decided by the model after prepare's "no comparison bears on this
+  trigger" line. The reason now names the measure: "No comparison bears on still
+  watching after 3 seconds, and the video cannot explain its own result." That is right:
+  G1 to G7 measure reach and engagement only.
+- **Total ask:** October's "Requests for November 2026: 7 videos (T1 2, T2 2, T3 3)." is
+  2 + 2 + 3, all video. September's is "Requests for October 2026: 3 videos (T3 3)." Both
+  are in `insights.json` and in the `insights.md` header.
+- **`metadata.json`:** both have `status` complete. `replaces` is 09:30:32 (run 6) and
+  09:31:02 (run 7). The history folders hold runs 1, 2, 4 and 6 (October) and 3, 5 and 7
+  (September), each with its `replaces` chain intact. `window_reports` is right, and
+  neither file holds `context`, `refs`, `allowed_numbers` or `general_numbers`.
+- **Tokens:** October's estimate ran 4.5% under (5,452 against 5,711; run 6: 4.6%).
+  September's ran 1.9% over (3,579 against 3,510; run 7: 1.9%). Both estimates rose by
+  about 95 tokens from runs 6 and 7, for video_003's longer tags and summary. Output was
+  1,564 and 729 tokens.
+
+The fixes on the actual output:
+
+- **F-057:** T1 and T2 share a kind (educational) and a kind of comparison (pillar: G3
+  and G7). Their language (ne, en) and platform (TikTok, Instagram) set them apart, so
+  the check rightly raised nothing. T3 is left out by design, and the total ask replaces
+  run 6's three alerts. T3 no longer asks for question openings, so run 6's risk is gone:
+  a client sending question-opening videos for both T2 and T3. What sets T1 and T2 apart
+  is only in the brief and the Language column, though. Both titles are "2 more
+  educational videos", and their cards differ only by platform. A retitle would help the
+  strategist, but it is not a defect.
+- **F-058:** T1's bar is G3's 5.94%, not the 4.7% below its group's average as in run 6.
+- **F-059:** T1's `language` is ne, which matches its brief.
+- **F-053:**
+  - T1's hypothesis is now a reason: "Educational posts may have contributed to the
+    strong result".
+  - T2's "The promotional pillar may be one factor to investigate, as promotional posts
+    averaged…" names the factor and its direction, which is acceptable. "To investigate"
+    is still worded as a next step, and ADVICE does not list it (latent).
+  - T2's request changes only the pillar (promo to educational), keeping English,
+    Instagram and the flagged video's style.
+  - T1's request repeats P7's kind, which the rule allows, since G3 is about the pillar
+    and P7 is already educational. But its brief adds "the same … question-led approach
+    as your flagged video". P7 used a curiosity hook ("Visitor visa refusals can hinge on
+    a factor applicants may overlook."). The question hook is P2's, the same video on
+    Instagram. So the brief describes the flagged post wrongly and adds a hook-style
+    change that no T1 comparison is about (F-060).
+
+Compared with runs 6 and 7:
+
+- **October:**
+  - T1 moved from G4 (format, with a 4.7% bar below that group's own 5.02%) to G3
+    (pillar, bar 5.94%), and its language from any to ne.
+  - Neither hypothesis says "worth testing" or "worth reconsidering" any more.
+  - The checks fell from 3 to 0. All 3 of run 6's checks were the F-057 alerts.
+  - T3 dropped its question opening, and `why_unknown` is kept (run 6's was empty).
+  - New: T1's brief gets P7's hook wrong (F-060).
+- **September:**
+  - It has the same structure as run 7.
+  - T3's request moved from "3 more English educational Instagram videos" (G1 to G4)
+    to "3 educational videos" with no language or platform. It cites G3, G5, G4 and G6,
+    with P2 as its model. Instagram is no longer asked for, though G1 (reach 3.2×) is the
+    strongest comparison. Both readings follow the evidence.
+  - Run 9 has 2 review notes, where run 7 had none. Note 2, that the comparisons favour
+    educational and video posts separately but not together, is useful.
+
+False negatives:
+
+- **October:** F-060. No check reads what a brief says about the flagged post's opening.
+  T2's "to investigate" is a latent wording gap, not an error.
+- **September:** none. "No checks" is right.
+
+Overall:
+
+- **September (run 9)** is usable as it is.
+- **October (run 8)** is usable after one edit: take "and question-led approach" out of
+  T1's brief, or write "curiosity-led". The optional edits:
+  - give T1 and T2 different titles
+  - reword T2's hypothesis as a plain reason ("promo videos may lose more viewers in
+    their first seconds")
+  - decide whether the client sees the 7 educational videos on three cards
+
+  Nothing blocks either month.
+
+Still open across F-036 to F-060, and whether it matters:
+
+- **F-060 (new, low):** one edit. The F-053 proposal it needs was not built: flag a
+  brief that changes the opening when no comparison the request tests is about hooks.
+- **F-053 residual (latent):** "to investigate" and similar next-step wording pass
+  ADVICE. It is harmless in run 8.
+- **F-054 residual (latent):** "90-day" is still not in `CLIENT_TERMS`. No card used it.
+- **F-056 residual (latent):** prepare does not warn about outdated topic tags, and
+  trilochan-consulting-group stays in the tag library from the outdated video_004. It
+  does not matter for these months, but re-tagging video_004, video_006 and video_008
+  would clear it.
+- **F-044:** October's estimate still runs about 4.5% under. This is accepted.
+- Nothing else in F-036 to F-059 is open.
+
+## Fix status (2026-11-05, uncommitted; draft-report re-tested in runs 3 to 6, draft-insights in runs 4 to 9)
 
 | Finding | Status | Change |
 | ------- | ------ | ------ |
@@ -294,6 +1019,32 @@ The session's "happened ?" for September is 4.
 | F-034 | open (October runs 3 and 5) | none yet |
 | F-035 | partly fixed (second replay, 2026-11-06): the two false "first on engagement rate" checks on October's retention lines are gone, and no retention line is read as engagement in runs 3 to 6. The shared-leader prompt still fires on 2 correct lines (October what worked s3, September what worked s1) | ENGAGEMENT matches only "engag…" and "liked, commented (on), shared or/and saved"; "share of (the) people/viewers …" is a separate SHARE pattern removed only before counts are matched |
 | F-010 (draft-report) | accepted (user, 2026-11-05), as for generate-copy | the permission prompt before the paid step is the approval; prepare still prints `summary_text` |
+| F-036 | confirmed fixed (runs 4, 5): video_003 is now shown as "sitting, speaking-to-camera, office, white-suit, … person", 12 of its 13 tags tied at 48.2 s with only "plant" cut. Neither plan has a visual-tag comparison, and no text rests on one | prepare groups a video by every visual tag; the model reads the 8 longest on screen (ties no longer cut alphabetically) |
+| F-037 | confirmed fixed (runs 4, 5): quantities are 2, 2 and 3 in October and 2 and 3 in September, and all 5 requests are video, which follows `format_lean` | the instruction asks for 2 by default (up to 3 for the quota trigger, 1 only to repeat a post); a video vs picture comparison gives the category evidence. Quantities stay capped by next month's quota (the requests are for next month) |
+| F-038 | confirmed fixed for the test design (run 6): each post-trigger request tests one hypothesis (`tests` 1, 1), and T2's changes only the pillar its comparison is about, keeping P8's platform, language and opening. All three October requests now share the educational kind, which their evidence produces (F-057). Earlier: partly fixed (runs 4, 5): each request tests one hypothesis (`tests` 1, 1, 0 / 1, 0) and keeps the flagged kind (English promo videos for both drop-off triggers). October T1 and T3 still ask for educational visa-advice videos (F-046), and the drop-off requests change the opening, which no comparison they cite is about (F-053) | each request names the hypothesis it tests (`tests`) and changes only that, keeping the flagged kind of post; finalize flags two requests with the same category and much the same brief |
+| F-039 | confirmed fixed (runs 2, 4, 5): every test names the measure, a number to beat and "2 new" posts; since F-045 the number is at or above the bar | tests name the measure, the number to beat and how many posts; finalize flags a test with no measure word |
+| F-040 | confirmed fixed (runs 4, 5): every label gives "N posts of M pieces of content" when the counts differ, every hypothesis gives its pieces of content (3, 2, one), and a post trigger's comparisons no longer hold its own post (F-051) | a comparison needs 2 different pieces of content on each side, shows "N posts of M pieces of content", and says which side holds the own post (and its twin) of a trigger it bears on; differences under 10% are left out (18 comparisons in October, about 5,400 input tokens) |
+| F-041 | confirmed fixed (runs 2, 4, 5); the card finding is now written by code (F-048): "A bigger share of the people who saw your Nepali TikTok video liked, commented on, shared or saved it: 2.2× your usual." | the instruction gives the share wording and the ratio; finalize flags a client line on an engagement rate in count words without a share or ratio |
+| F-042 | confirmed fixed (runs 2 to 9): neither month has a hypothesis for the quota trigger, and nothing was dropped. `why_unknown` is kept in runs 7, 8 and 9. In runs 5 and 6 the model left it empty and put the reason in a review note, so `insights.md` showed only "the numbers cannot say." (harmless) | the quota trigger gets no hypotheses (the reason says what the data lacks); finalize drops any the model writes and `insights.md` says the numbers cannot tell why |
+| F-043 | confirmed fixed (runs 2 to 5): every button has a number ("Send us 2 videos", "Send us 2 promo videos", "Send us 3 videos", "Send us 2 more videos", "Send us 3 educational videos"), and posting is "we". September's card actions repeat the finding (F-054) | the card names the kind of post, carries its number, uses "we" for posting; finalize flags a button without a quantity, and "slots" is an internal term |
+| F-044 | confirmed fixed for `insights.md` (runs 2 to 5): both headers list every window report. The estimate, left as it is, ran 5.0% under in October and 1.4% over in September (run 4: 5,288 against 5,555; run 5: 3,359 against 3,313) | `insights.md` lists every report input in the window; the token estimate is left as it is (shared estimator, rough by design) |
+| F-045 | confirmed fixed (runs 4, 5): every test is at or above its bar. October T1 is "each above 5.94%" (bar 4.7%), T2 is "more than 58%" (bar 58%), and September T1 is "above 57%" (bar 57%). Each refute_if is at the average. The bar check fired on nothing, and nothing was due | each post trigger gives the bar a test must beat (the 90-day average); finalize flags a test confirmed below it |
+| F-046 | closed through F-057 (run 8): the shared kind follows from the evidence. The check now leaves out the quota request and flags only pairs nothing sets apart, and it raised nothing on run 8's T1/T2 (ne TikTok, en Instagram). Earlier (runs 4, 6): it flagged the real run-4 T1/T3 duplicate (0.35) and a false T2/T3 alarm (0.27, F-055), then all three run-6 pairs (F-057) | the look-alike check reads title and brief, without filler words, at 0.25 (duplicates scored 0.28 and 0.50, different requests at most 0.18 in runs 1 to 3) |
+| F-047 | confirmed fixed (runs 4, 5): `format_lean` is video in both months, all 5 requests are video, and September's T3 moved from photos to videos. The check fired on nothing, and nothing was due | prepare works out the format the numbers favour (video in both months); finalize flags a request category against it, and the instruction says the category follows the comparisons |
+| F-048 | confirmed fixed (runs 4, 5): all 5 card findings are prepare's `card` sentence word for word, and no card says "engagement rate" or "pillars". But September's card actions repeat the finding, and the number check flags the repeat (F-054) | the card's finding is one sentence per rule, written by prepare from the trigger ("…2.2× your usual."); the model writes only the action and button, so "engagement rate" and "pillars" cannot reach the finding |
+| F-049 | confirmed fixed (runs 4, 5): the quota request is 3 in both months (gaps 8 and 10), taken from the trigger, and "catch up" is in no text | the quota trigger's request size is set from the gap (at most 3) and overrides the model's; "catch up" is a client-card term and the instruction forbids the promise |
+| F-050 | confirmed fixed (runs 4, 5): P1 and P8 show activities first ("sitting, speaking-to-camera"), then "office" and "white-suit", then objects ending in "person". That is 12 of 13 tied tags, with "plant" cut | tags equally long on screen list activities, then scenes, attributes and objects; up to 12 are shown |
+| F-051 | confirmed fixed for comparisons (runs 4, 5): October T1's G1 to G4 are worked out without P2 and P7, and T2's G5 to G9 without P1 and P8, so no hypothesis cites a comparison that holds its own post. With no comparison left, September T1's hypothesis cites the post itself (F-052). October T2's hypothesis is still a suggestion ("may be worth testing with a different opening"), not a reason (F-053) | a trigger's comparisons are the groups its post belongs to, worked out without the post and the same video posted again (October T1: the Nepali TikTok comparison disappears, as only one other Nepali post is left) |
+| F-052 | confirmed fixed (runs 6, 7, 9): both October hypotheses cite a comparison that bears on their trigger (run 6: G4, G7; run 8: G3, G7). September's T1 and T2 are "not enough evidence" in runs 7 and 9, decided by the model after prepare's "no comparison bears on this trigger" line. In run 9 the reason names the measure ("No comparison bears on still watching after 3 seconds…"). The code's fallback, replayed with run 5's T1 answer, drops the P1-only hypothesis and gives T1 its own reason ("decided by the scripts") | finalize keeps a post trigger's hypothesis only if it cites a comparison bearing on that trigger; a post trigger no comparison bears on becomes "not enough evidence" in code; prepare tells the model so (both September drop-off triggers) |
+| F-053 | fixed for the hypotheses (run 8); the request half is let down by F-060. T1's hypothesis is a reason ("Educational posts may have contributed to the strong result"). T2's "may be one factor to investigate, as promotional posts averaged…" names the factor and is acceptable, but "investigate" is a next-step word ADVICE does not list (latent). T2's request changes only the pillar. T1's repeats P7's kind but its brief adds a "question-led approach" P7 does not have (F-060); the proposed check on briefs that change the opening was not built. Run 6: both hypotheses were advice ("worth testing", "worth reconsidering") | the "another opening" example is gone; the request changes only what the cited comparison is about (pillar, platform, language, format, hook style); a hypothesis is a possible reason, never advice, and finalize flags "worth testing", "consider", "should" and the like |
+| F-054 | confirmed fixed (runs 6 to 9): none of the 8 card actions repeats its finding. Each starts from the ask and carries only the quantity, and the repeat check rightly raised nothing (the replay on runs 8 and 9 is empty too). "90-day" is still not in `CLIENT_TERMS` (latent; no card used it) | the card action and button may use their trigger's numbers; finalize flags an action that gives the trigger's numbers again (not the quantity) or shares half its words with the finding; the instruction says the card shows the finding just before the action |
+| F-055 | confirmed fixed as specified (runs 6, 7): the boilerplate false alarm is gone, and the check reads the kind. In run 6 it flags T1/T2, T1/T3 and T2/T3, and all three requests do ask for educational videos. But the overlap comes from the evidence, and the advice "merge them or make each test its own hypothesis" is wrong for T1/T2, which already test their own (F-057) | two requests are the same when they share the category and the first pillar their title or brief names; prepare records the pillars |
+| F-056 | fixed by the re-tag (runs 8, 9): `/tag-topics input/video_003.MOV force` (2026-11-06T09:44:50, records `organisation.json`) gives entity tilicho-consulting-group on S6, which says "Cleary Consulting Group". Both regenerated plans give P1 and P8 the new tags, and neither has "cleary" or any other wrong form. All three reported videos (003, 007, 014) are current. Residual, latent: no code guard (prepare does not warn about outdated topic tags), and the library still holds trilochan-consulting-group from the outdated video_004, which is in no report | none yet |
+| F-057 | confirmed fixed (run 8): no look-alike check fired. T1 and T2 share kind and comparison type (educational, pillar) but differ in language (ne, en) and platform (TikTok, Instagram); the quota request is left out. `total_ask` is "Requests for November 2026: 7 videos (T1 2, T2 2, T3 3).", right and in the `insights.md` header. T3 no longer asks for question openings. Minor: T1 and T2 share the title "2 more educational videos" | requests may share a kind when the evidence points there; the check leaves out the quota request and flags a pair only when language, platform named and the kinds of comparison tested are all the same; finalize adds the month's total ask (`total_ask`, in `insights.md`) |
+| F-058 | confirmed fixed (run 8): T1's test is "above 5.94%", G3's educational average (bar max(4.7%, 5.94%)). T2's 67.53% is above its bar of 58% (G7's promo side is 49.65%). The bar check rightly fired on nothing. The replay on run 6 flags its 4.7% against 5.02% | a hypothesis's bar is the higher of the 90-day average and each cited group's average on the trigger's measure, checked per hypothesis (a bar raised over all of a trigger's groups was tried and was too strict: T2's became 69.95%) |
+| F-059 | confirmed fixed (runs 8, 9): T1's `language` is ne and its brief names Nepali; T2 is en (English); both T3s are any and name neither. A replay of `language_of` agrees with every field | the request's language is the one its title or brief names when it names exactly one; the instruction says to name a language only when it is set |
+| F-060 | open, left to the strategist (October run 8): delete "and question-led approach" from T1's brief | no check reads hook wording; not worth one yet |
+| Latent items after runs 8 and 9 | fixed, not re-run (2026-11-06) | F-053: "investigate" is advice words; "90-day" (any "N-day") is a client-card term; F-056: prepare warns when a post's topic tags are outdated, as tag-topics would call them. On the real months it warns for video_014 and video_007, which tag-topics' own prepare also reports as outdated, and not for the re-tagged video_003; re-tagging them is a paid /tag-topics run each |
 
 ## Findings
 
@@ -1018,3 +1769,727 @@ The session's "happened ?" for September is 4.
   the end only. What remains is the shared-leader "make sure" prompt on 2 correct lines
   (October what worked s3, September what worked s1). Status: partly fixed; the fix
   direction for the prompt stands.
+
+### F-036: Visual-tag comparisons use only the first 8 tags, cut alphabetically, so the talking-head video_003 counts as "without speaking-to-camera" (high, draft-insights, October)
+
+- **Observed:** G1, G9 and G15 compare "videos showing person, speaking-to-camera and
+  text-on-screen" (P2, P6, P7, P11: video_014 and video_007) with "videos without it"
+  (P1, P8: video_003). G1 gives engagement 8.17% vs 3.47%, 2.4×. But video_003 is a
+  talking-head video. Run 1 and F-001 found `V:speaking-to-camera` in its `tags.json`,
+  spanning the whole video (`[[0, 48.167]]`, 13 of 15 tags whole-video). T1's second
+  hypothesis ("A person speaking to camera with text on screen may have helped the
+  video connect…", G1, P7) and T1's brief ("…with a person speaking to camera and text
+  on screen…") rest on this contrast. All three videos in the window are talking-head
+  videos, so the request asks for nothing new.
+- **Evidence:**
+  - `tag-visuals/finalize.py:347` sorts tags by frame count, then by label.
+  - `prepare.py:92` sets `MAX_VISUAL_TAGS = 8`.
+  - `prepare.py:359` keeps the first 8 tags.
+  - `prepare.py:383-384` groups posts by those 8 tags only.
+  - In a one-shot video most tags tie on frames, so the cut is alphabetical. P1 and P8
+    show exactly "blinds, certificate, chair, desk, glasses, keyboard, microphone,
+    office", which all sort before "person" and "speaking-to-camera".
+  - The other two lists are alphabetical too, so G7 and G23 (display, standing, suit) and
+    G18, G22 and G24 (sitting) may be the same artefact: 8 of the 24 comparisons.
+  - Nothing in finalize can see this. The numbers are right, and the group is wrong.
+- **Why it matters:** a hypothesis, a request brief and part of the card's "this format"
+  rest on a difference that probably does not exist. It reads as solid evidence (2.4×,
+  the largest gap in the list).
+- **Fix direction (proposal):**
+  - Group posts on every tag the video has, or on every tag seen in at least half the
+    frames. Keep the 8-tag cap only for the list shown to the model.
+  - Break ties by `seconds`, not by label.
+  - Add a prepare test in which a tag that sorts 9th alphabetically among tied tags
+    still puts its video in the group.
+
+### F-037: Every request asks for 1 item; T3 answers 8 open slots with 1 photo (medium, draft-insights, October)
+
+- **Observed:** all three requests have `quantity` 1: "1 more educational video", "1
+  educational video with a question opening" and "1 educational Instagram post"
+  (`photo`). The allowed values are 1, 2 and 3. T3's trigger is "8 of the 16 posts …
+  were published; 8 behind", and its request fills 1 of those 8. The Pulse card asks for
+  "two more this month" ("Send us 2 more stories").
+- **Evidence:**
+  - The instruction in `draft.py` asks for "quantity (the smallest the schema allows that
+    would test the hypothesis)". The schema allows 1, so at low effort the model reads it
+    as "1". The examples in the same instruction ("2 more success-story videos", "Send us
+    two more this month", "Send us 2 more stories") and the design's example result
+    (`"quantity": 2`, "Send us 2 more videos") point the other way.
+  - A single new post cannot test a hypothesis that rests on group averages (6 vs 7
+    posts).
+  - Latent: design decision 7 says the quantities are "capped by the open quota slots".
+    `prepare.py:750` caps them by `monthly_posts` (16) instead, so with 0 or 1 open slots
+    the model is still offered 3.
+  - T3's `photo` is not backed by any comparison. `GROUPS` has pillar, platform,
+    language, hook and visual, but no format. Most of G2's educational average comes from
+    videos: P2, P6, P7 and P11 have 7.55% to 10.23%, against 3.97% and 4.87% for the
+    photo posts P3 and P9. G4's Instagram reach is mostly videos too.
+- **Why it matters:** the strategist has to raise every quantity by hand. For the pace
+  trigger, the insight does not do what the instruction asks ("so the agency can fill
+  the open slots").
+- **Fix direction (proposal):**
+  - Replace "the smallest the schema allows" with what the test needs: at least 2, so a
+    result rests on more than one post. For the pace trigger, ask for as many as the
+    open slots allow, up to the cap.
+  - Cap the quantities by `monthly_posts - published` when the pace trigger fires, as
+    the design says.
+  - Add a format comparison (video vs photo post), so the category can cite evidence.
+
+### F-038: T1 and T2 ask for the same video, and each request mixes its hypotheses, so neither result can confirm or refute one (medium, draft-insights, October)
+
+- **Observed:** the two briefs are one ask, an educational video about student visa
+  applications that opens with a question:
+  - T1: "Send a short educational video with a person speaking to camera and text on
+    screen, using a clear opening question about student visa applications."
+  - T2: "Send a short educational video that opens with a clear question for students or
+    parents about student visa applications."
+
+  Each request also bundles both of its hypotheses: T2's question opening (H1, G17) and
+  educational pillar (H2, G13), and T1's pillar (H1) and presentation (H2). If the new
+  video holds viewers, nothing says which hypothesis it supports.
+  - T1's own post P7 opened with a curiosity hook ("Visitor visa refusals can hinge on a
+    factor applicants may overlook"), not a question. "To try this format again" (T1
+    card) therefore asks for something the flagged post did not do. No comparison in T1's
+    evidence (G1, G2, P2, P6, P7) is about hooks.
+  - T2's flagged post is a Promo success-story video (P8, statement hook), but the
+    request switches to an educational video. The question opening is never tried on the
+    kind of video that lost viewers.
+- **Evidence:** the instruction asks for one action per trigger "and the references it
+  rests on". Nothing asks which hypothesis the request tests, or asks the requests to
+  differ, and finalize compares no requests with each other.
+- **Why it matters:** the client gets two cards ("Send us a video") for one video. The
+  "test" the design promises (decision 6) cannot be read from the result.
+- **Fix direction (proposal):**
+  - Have each request name the one hypothesis it tests (a `tests` field) and change only
+    that: for T2 H1, a promo or success-story video that opens with a question.
+  - Ask that requests in one month differ in category or content, or merge them.
+  - Have finalize note two requests with the same category whose briefs share most of
+    their words.
+
+### F-039: Three of six tests name no measure (low, draft-insights, October)
+
+- **Observed:** these say "perform(s) more strongly" / "no better", with no measure,
+  post count or period:
+  - T1 H1: "A new educational post performs more strongly than comparable posts in other
+    pillars." Its refute_if says "New educational posts…", which switches to the plural.
+  - T1 H2: "New videos using this presentation style perform more strongly than videos
+    without it."
+  - T3 H1: "New educational posts perform more strongly than posts in other pillars."
+
+  T2's two tests and T3 H2 name their measure ("still watching after 3 seconds", "reach
+  more people").
+- **Evidence:** the instruction asks only for "one sentence on what result would support
+  it". `insight_checks` checks only that confirm_if and refute_if are not empty.
+- **Why it matters:** it is not clear whether "more strongly" means engagement or
+  reach, so whoever reads the result next month can call it either way.
+- **Fix direction (proposal):** ask confirm_if and refute_if to name the measure of the
+  comparison the hypothesis cites, and how many new posts make the test. finalize could
+  flag a test without a measure word (engag…/liked…, reach/people reached, watching).
+
+### F-040: Comparisons count posts, not videos, and include the flagged post and its twin (medium, draft-insights, October)
+
+- **Observed:** four hypotheses give post counts that count one video twice:
+  - T1 H1 and T3 H1 cite G2's "6 educational posts". These are 4 pieces of content: P2
+    and P7 are video_014, and P6 and P11 are video_007. The 7 others include P1 and P8
+    (video_003).
+  - T2 H2 cites G13's "4 posts in each group". These are 2 videos against 3.
+  - T3 H2 cites G4's "7 Instagram posts", which include P1 and P8.
+
+  G2 is used to explain T1, but its group holds T1's own post P7 (10.23%) and its twin
+  P2 (7.55%). A third of the "educational" evidence is the flagged video itself.
+  Without them the gap remains (P3, P6, P9 and P11 average about 5.9%, against 3.43%),
+  but the stated 6.92% is partly the outlier explaining itself. Review note 2 flags the
+  repeat generically ("repeated videos are counted as posts…"), and no hypothesis says
+  it.
+- **Evidence:** `prepare.py:433-434` counts videos only for the `hook` and `visual`
+  kinds, so labels for pillar, platform and language say "(6 posts)" with no video
+  count. The instruction asks to "say how many posts are behind it", not how many
+  videos. A comparison "bears on" a trigger exactly when the trigger's post is a member
+  (`prepare.py:419-423`), so every comparison cited for T1 contains P7.
+- **Why it matters:** two hypotheses look as if they rest on twice as many pieces of
+  content as they do. This is the same mistake as F-024, at the level of the evidence.
+- **Fix direction (proposal):**
+  - Give every comparison its video count (distinct `source_file`; a post without one
+    counts as one), and add "includes the flagged post" / "and the same video on another
+    platform" to its label when that is so.
+  - Ask the model to state videos where the label gives them.
+
+### F-041: The T1 client card claims in count words a lead that the counts contradict (medium, draft-insights, October)
+
+- **Observed:** the T1 card finding reads "Your Nepali TikTok video was liked, commented
+  on, shared or saved more often than your other recent posts." P7 had 700 likes, 88
+  comments, 120 shares and 95 saves. P6, the Instagram financial-documents video, had
+  more of every count: 820, 96, 214 and 310. P7 leads only as a share of the people
+  reached (10.23% against 9.35%). The trigger also compares P7 with the 90-day average
+  (2.2× of 4.7%), not with every other post.
+- **Evidence:** the instruction offers "liked, commented on, shared or saved" as the
+  people-terms wording for engagement rate, and nothing turns that into a share. The
+  sentence has no number, so `number_checks` and `ratio_checks` have nothing to test,
+  and checks is empty.
+- **Why it matters:** this is the one sentence the client may read. A client who looks
+  at the post counts will find it wrong. It is the F-025 mistake (counts and a share
+  read as one) on the client card.
+- **Fix direction (proposal):**
+  - Give the share wording in the instruction ("a bigger share of the people who saw it
+    liked, commented on, shared or saved it"), plus the trigger's own ratio, in the
+    Pulse style ("2.2× your usual").
+  - Have finalize flag a client line that cites an engagement-rate trigger and uses
+    "more often", "more than" or "most" without "share", "of the people" or a ratio.
+
+### F-042: T3's hypotheses do not say why the month fell behind, and their tests measure something else (medium, draft-insights, October)
+
+- **Observed:** T3 is "8 of the 16 posts … were published; 8 behind". Both hypotheses
+  suggest what to post, not why posts are missing: "Educational posts may be a useful
+  way to fill open slots…" (G2), and "Instagram may be a useful channel for some open
+  slots…" (G4). Their tests measure engagement and reach, not pace. The model's own
+  review note 1 says "this evidence does not explain why fewer posts were published".
+- **Evidence:** the instruction defines hypotheses as "1 or 2 possible reasons", and for
+  the pace trigger it adds "ask for what the comparisons show works best". The material
+  has nothing that bears on a shortfall (assets received, approvals, schedule). For the
+  pace trigger, prepare counts a comparison as bearing on it when "a group doing better"
+  (`prepare.py:423`).
+- **Why it matters:** the strategist gets two "hypotheses" for a trigger that are
+  content advice labelled as reasons. The design's "why it may have happened" is not
+  answered, and the "not enough evidence" path (decision 10) went unused, although the
+  model knew the evidence was missing.
+- **Fix direction (proposal):** for `pace_behind_quota`, either ask for
+  `enough_evidence: false` on the "why" with a reason, and keep the request as "what to
+  fill the slots with", or rename the field for that rule ("what may work best for the
+  open slots"), with tests on the measure cited. Say which in the skill and the design.
+
+### F-043: The client cards are vaguer than the Pulse card and partly off-voice (low, draft-insights, October)
+
+- **Observed:**
+  - No card carries a number or a ratio. The Pulse card leads with "Success-story videos
+    got 3.2× your average reach".
+  - The findings describe one post, and the actions ask for a type without linking the
+    two. T1 asks for "one more educational video to try this format again", and the
+    card never says what the format is.
+  - T2's "On your Instagram video, 48% of viewers were still watching after 3 seconds."
+    does not say which video (the window has four Instagram videos) or how 48%
+    compares.
+  - T3's "You published 8 of your 16 planned October posts." puts the publishing on the
+    client. The instruction says "we" for the agency, which does the publishing.
+  - T3's action uses the scheduling term "open slots".
+  - The buttons are generic: "Send us a video" twice and "Send us a post". The client
+    sends a photo, not a post. The Pulse card has "Send us 2 more stories".
+- **Evidence:** compare `Assets and Results.dc.html:243-246`. Nothing checks
+  `CLIENT_TERMS` for "slot" or the agency's "we".
+- **Why it matters:** the strategist rewrites each card before it can be shown. Two
+  identical buttons on two cards do not say what each one adds.
+- **Fix direction (proposal):** ask that the finding name the kind of post (as the
+  request does) and carry the cited ratio or number when one is in the trigger or
+  comparison. Ask that the button name the quantity and the kind ("Send us 2 more
+  videos"), and use "we" for publishing. Add "slots" to `CLIENT_TERMS`.
+
+### F-044: `insights.md` names only the October report as input; the token estimate ran 7% under (low, draft-insights, October)
+
+- **Observed:** the header reads "Input: insights/2026-10.json (the anomaly rules'
+  triggers) and reports/2026-10.json (the month's numbers)". The comparisons also used
+  `reports/2026-09.json` (P1 to P5), which `metadata.json` `inputs.window_reports`
+  records. The estimate was 4,956 input tokens and the request used 5,331, so it was
+  7.6% under. draft-report's estimates run 2% to 4% over.
+- **Evidence:** `finalize.py` `to_markdown` writes only `plan['inputs']['report']`.
+- **Why it matters:** a reader of `insights.md` does not know that a second month's
+  numbers feed the comparisons. The cost line slightly understates.
+- **Fix direction (proposal):** list `window_reports` in the header. Recalibrate the
+  token estimate. It already counts the instructions, the schema and the context
+  (`prepare.py:790`), so the chars-per-token ratio for this mixed text is what is off.
+
+### F-045: Both tests set their bar at the weaker side's average, below the 90-day average, so almost any new video confirms them (medium, draft-insights, October run 2)
+
+- **Observed:**
+  - T1: "This may be supported if 2 new educational videos have a higher engagement rate
+    than 3.43%." 3.43% is G2's average for the other pillars, below the 90-day 4.7%.
+    6 of the 8 videos in the window already beat it, including the promos P1 (3.91%)
+    and P12 (5.72%). Only P5 (2.58%) and P8 (3.03%) fall under it. A promo video would
+    pass too, so the test does not test the pillar.
+  - T2: "…if 2 new promo videos with question openings have at least 54.67% still
+    watching after 3 seconds." 54.67% is G15's average for other hook styles, below the
+    58% average, and 2 of its 3 posts are the flagged video_003 itself (P8 48%, P1 52%).
+    A video at 55% would "support" the question opening while still under the client's
+    usual.
+  - Neither test says whether "2 new videos" means each video or their average.
+- **Evidence:**
+  - The instruction asks for "the number to beat" without saying which number.
+  - finalize lets a test use any of its G's, its trigger's or BL's numbers, and checks
+    only that the number is known and that a measure word is present.
+- **Why it matters:** a test that cannot fail does not tell the strategist next month
+  whether the hypothesis held. Both would read as confirmed on an ordinary month.
+- **Fix direction (proposal):**
+  - Have prepare give each comparison the bar to beat: the higher of the 90-day average
+    for that measure and the stronger side's average. Have the test cite it, and say "on
+    average across the N new posts".
+  - Have finalize flag a confirm_if whose number is below BL's average on the same
+    measure (engagement 4.7%, still watching after 3 s 58%).
+
+### F-046: T1's and T3's requests ask for the same educational videos; the same-request check misses it (medium, draft-insights, October run 2)
+
+- **Observed:**
+  - T1: "Send us two educational videos explaining practical visa-application guidance,
+    in the same straightforward, adviser-led style as the flagged video."
+  - T3: "Send us three educational videos with practical visa-application guidance so we
+    can catch up with the kind of content that compared well…"
+  - Both cite G2, and both are `video`. The client gets two cards for one ask, "Send 2
+    more videos" and "Send 3 videos", 5 educational videos in all. The instruction says
+    "Each request this month asks for something different from the others".
+- **Evidence:** `same_request_checks` compares the briefs' words of 4 or more letters
+  over their union. T1 and T3 share 7 of 26 (0.27), under `SAME_BRIEF` (0.5), because
+  T3's brief adds a long reason. Against the shorter brief (T1, 14 words) the overlap
+  is 0.5. The October replay that flagged run 1's T1 and T2 had two short briefs.
+- **Why it matters:** this is the F-038 problem again, between a post trigger and the
+  quota trigger. T3's 3 videos repeat T1's test, so the strategist has to merge them by
+  hand.
+- **Fix direction (proposal):**
+  - Measure the overlap against the shorter brief, or compare what is asked for
+    (category, plus the pillar or kind named: educational, promo, success-story) and the
+    comparisons cited (the same G).
+  - For the quota trigger, ask for something no other request asks for, or add to the
+    other request's quantity and say so.
+
+### F-047: September's quota request asks for 2 photos, which the format comparisons it was given count against (medium, draft-insights, September run 3)
+
+- **Observed:**
+  - T3 asks for `photo`, 2, "2 more educational posts", with the brief "…using a post
+    type that reached more people and had a bigger share of people who engaged". It cites
+    G3 and G5 (Educational, 2 posts: P2, a video, and P3, a photo).
+  - G4 (video posts reached 7,300 vs 3,950, 1.8×) and G6 (engagement 4.68% vs 3.25%,
+    1.4×) are both marked "bears on T3", and both favour video.
+  - The educational lead comes from the video P2 (8,700 reached, 7.55%). The one
+    educational photo, P3, reached 6,000 people at 3.97%, below the 4.2% average. So the
+    brief's claim does not hold for photos.
+  - The button "Send us 2 posts" does not name the photos.
+  - October's T3 asked for video, which fits G1 and G7 (it did not cite them).
+- **Evidence:**
+  - The instruction says only "its category (photo, video or story)". Nothing ties the
+    category to a format comparison.
+  - finalize checks only that the category is one of `CATEGORIES`.
+  - The F-037 fix added the comparison ("gives the category evidence"), but nothing
+    makes the model use it.
+- **Why it matters:** the client is asked for the kind of post the numbers rate lower,
+  for the reason that it did better.
+- **Fix direction (proposal):**
+  - Say in the instruction that the category follows a format comparison that bears on
+    the trigger.
+  - Have finalize flag a request whose category is on the weaker side of a format
+    comparison that bears on its trigger or that it cites.
+  - For the quota trigger, the category could be set in code from that comparison.
+
+### F-048: Client cards say "engagement rate" whenever they give an engagement number (medium, draft-insights, runs 2 and 3)
+
+- **Observed:**
+  - October T1: "Your educational TikTok video had a 10.23% engagement rate, 2.2× your
+    usual 4.7%."
+  - September T3: "Your educational posts reached 1.5× as many people and had a 1.9×
+    engagement rate as posts in other pillars."
+  - Both checks are right: the instruction lists engagement rate as a term the client
+    never reads. Every card finding about engagement in runs 1 to 3 either names the
+    term (runs 2, 3) or uses count words (run 1, F-041). The share wording the
+    instruction gives ("a bigger share of the people who saw it…") never appeared.
+  - September's card also:
+    - uses "pillars", an agency term that is not in `CLIENT_TERMS`
+    - is ungrammatical ("a 1.9× engagement rate as posts")
+    - is not about its own trigger: it cites G3 and G5, not T3, while October's quota
+      card gave "We posted 8 of the 16"
+- **Evidence:** the instruction asks the finding to "give the trigger's or comparison's
+  own number or ratio", and a percentage needs a name. The allowed name is long, so the
+  model takes the short one. This is the C17b lesson: a rule the model ignores even when
+  told is built in code.
+- **Why it matters:** the client card is the one sentence that may leave the agency.
+  The strategist rewrites it every month, and the check stays as a standing alert.
+- **Fix direction (proposal):**
+  - Build the card finding in finalize from the trigger, with fixed wording per rule:
+    - engagement: "A bigger share of the people who saw your {kind} liked, commented
+      on, shared or saved it: 2.2× your usual."
+    - drop-off: "{48}% of people were still watching your {kind} after 3 seconds;
+      usually {58}%."
+    - quota: "We posted {8} of the {16} posts planned for {October}."
+  - Take {kind} from the post's pillar, platform and format.
+  - Have the model write only the card's action. The action and button could also come
+    from the request (quantity and category).
+  - Add "pillars?" to `CLIENT_TERMS`.
+
+### F-049: The quota request's size is left to the model, and the card promises to "catch up" (low, draft-insights, runs 2 and 3)
+
+- **Observed:** October asks for 3 videos for 8 behind; September asks for 2 photos for
+  10 behind. Both are within "up to 3", so the bigger gap got the smaller request. Both
+  cards say "so we can catch up", which 2 or 3 posts cannot do. The requests are for
+  next month, which has its own quota of 16. The September session itself noted that 2
+  falls well short.
+- **Evidence:** `draft.py` says "quantity (2, so the result rests on more than one post;
+  up to 3 for the quota trigger…)". The design caps quantities by next month's quota,
+  not by this month's gap.
+- **Why it matters:** the size the strategist sees depends on the run, and the card
+  promises something the request cannot deliver.
+- **Fix direction (proposal):**
+  - Set the quota request's quantity in code: `MAX_QUANTITY`, or the smaller of the gap
+    and `MAX_QUANTITY`.
+  - Word the card as "to help us keep to the plan", not "catch up".
+  - Decide in the design whether a quota request adds to next month's plan or fills
+    part of it.
+
+### F-050: video_003's pictures are still shown as its first 8 tags alphabetically, without "person" and "speaking-to-camera" (low, latent, draft-insights, runs 2 and 3)
+
+- **Observed:**
+  - P1 and P8 (video_003) are still described as "blinds, certificate, chair, desk,
+    glasses, keyboard, microphone, office", in both regenerated plans.
+  - P2 and P7 (video_014) and P6 and P11 (video_007) show "person, speaking-to-camera".
+  - video_003's `tags.json` has 13 tags at 48.2 s (all 10 frames), including person and
+    speaking to camera.
+  - Nothing in runs 2 and 3 rests on it:
+    - neither plan has a visual comparison
+    - the briefs say "adviser-led" and "success-story style"
+    - September's T1 reason says only that the pictures exist
+- **Evidence:** `prepare.py:366` sorts the shown tags by seconds only. Python's stable
+  sort keeps the alphabetical order of the ties, and `prepare.py:369` cuts at
+  `MAX_VISUAL_TAGS`. The F-036 fix status said "ties no longer cut alphabetically";
+  that holds for grouping, not for what the model reads.
+- **Why it matters:** the model reads the talking-head video as one without a person
+  speaking. A hypothesis or brief could repeat F-036's false contrast from the text
+  alone.
+- **Fix direction (proposal):** show every tag tied with the 8th (13 here), or rank tags
+  that tie by a fixed order that puts people and actions first. Add a prepare test on
+  video_003's tags.
+
+### F-051: T2's hypothesis rests mostly on the flagged video and does not say so; T1's says so and is then a recommendation, not a reason (medium, draft-insights, October run 2)
+
+- **Observed:**
+  - T2 H1 cites G15, whose other side (54.67%) is P1, P7 and P8. P1 and P8 are the
+    flagged video_003, and the label says "the other side holds T2's own post P8 and the
+    same video posted again (P1)".
+  - The hypothesis says "an early pattern based on 2 pieces of content in each group",
+    not that one of them is the flagged video. Without video_003, that side has 1 piece
+    of content and the comparison would not meet `MIN_GROUP`. The case for a question
+    opening is mostly the flagged video's own result, and the test's bar comes from it
+    (F-045).
+  - T1 H1 says "includes the flagged post itself", but it then offers "may be worth
+    testing again", which is a recommendation, not a reason. The model's own note says
+    not to present G2 as an explanation.
+- **Evidence:**
+  - The instruction says "When a comparison holds the flagged post itself, say so: a
+    post cannot explain its own result", and nothing checks it.
+  - A comparison bears on a post trigger only when the trigger's post is in it
+    (`prepare.py` `bears`), so every comparison cited for T1 or T2 holds its own post.
+- **Why it matters:** the strategist reads T2's hypothesis as resting on 2 pieces of
+  content per side, when it is largely the flagged video compared with the rest.
+- **Fix direction (proposal):**
+  - For a comparison that bears on a post trigger, have prepare also give the averages
+    without the flagged video and its twins, and whether each side still has
+    `MIN_GROUP`. A hypothesis can then rest on the other posts, and a trigger with no
+    such comparison goes to "not enough evidence".
+  - Have finalize flag a hypothesis that cites a G whose label holds the trigger's own
+    post when the text does not say so ("flagged", "itself", "own").
+
+### F-052: September T1's hypothesis rests only on the flagged post itself; run 3's "not enough evidence" was right (medium, draft-insights, September run 5)
+
+- **Observed:**
+  - T1 (ci-2609-01, P1, 48% gone in 3 s) has: "The opening statement may not have given
+    viewers enough reason to keep watching; this is a possibility based on one piece of
+    video content, so the pattern is not established." Its only ref is P1, T1's own post.
+  - Its request ("2 more visa-success-story videos with a new opening") cites P1 and T1,
+    and no comparison.
+  - The model's own note 2 says the suggestion "is based on one piece of content and
+    does not establish a pattern".
+  - In the same answer, T2 (P5) lacks the same thing and got "not enough evidence".
+- **Evidence:**
+  - In the regenerated plan, G1 to G7 all "bear on T3"; none bears on T1 or T2. With
+    P1 left out (F-051), the only other videos are P2 and P5, so no drop-off comparison
+    can have 2 pieces of content on each side.
+  - Apart from the own post now being left out, T1's plan is the one run 3 answered
+    "not enough evidence" to. Only the model's answer changed, at low effort.
+  - The instruction says "When nothing in the comparisons or posts bears on a trigger,
+    set enough_evidence to false". "or posts" lets the trigger's own post count as
+    bearing on it. That contradicts "a post cannot explain its own result" a few lines
+    later.
+  - `clean_insight` keeps any hypothesis with a known ref. `insight_checks` does not ask
+    for a comparison.
+- **Why it matters:** this is the self-explanation F-051 removed from the comparisons,
+  now made directly from the post's hook label. The strategist gets a "hypothesis" and a
+  two-video test resting on one post, which the design says to answer with "not enough
+  evidence" (decision 10, "never stretch thin evidence into a claim").
+- **Fix direction (proposal):**
+  - In prepare, record for each trigger the comparisons that bear on it (in
+    `plan["triggers"][T]`, or `bears_on` in each G's ref). When there are none, say so
+    under the trigger in the context: "no comparison bears on this trigger: answer not
+    enough evidence".
+  - In finalize, require a post trigger's hypothesis to cite at least one G that bears on
+    its trigger. Otherwise drop it into `dropped` with that reason. When no hypothesis is
+    left, move the insight to `not_enough_evidence` with a code-written reason. A check
+    alone would leave a two-video request resting on one post on the page.
+  - Replay effect: only September run 5's T1 changes. Every hypothesis in runs 1, 2 and 4
+    cites a bearing G (G2, G1, G17, G13, G15, G3, G7).
+  - Drop "or posts" from the instruction's not-enough-evidence sentence.
+
+### F-053: The drop-off requests change the opening, which no comparison they cite is about; the instruction's example prescribes it (medium, draft-insights, October run 4 and September run 5)
+
+- **Observed:**
+  - October T2's hypothesis is "The promo style may be worth testing with a different
+    opening, since promo posts had lower average still-watching after 3 seconds than
+    posts in other pillars…". It cites G7, Promo (P5, P12) vs other pillars, 49.65% vs
+    67.53%.
+  - The request asks for "two English promo videos … but open with a different first
+    line". It changes the opening while keeping the promo kind the hypothesis blames.
+  - If both new promos beat 58%, the result shows that promos can hold viewers, which
+    counts against G7. It says nothing about whether the opening lost them. The model's
+    note 2 says "the material cannot establish that the opening explains" it.
+  - September T1 asks for the same "new opening" promo with no comparison at all
+    (F-052).
+  - The hypothesis is a suggestion ("may be worth testing"), not a reason. This is
+    F-051's second half, still there.
+- **Evidence:**
+  - T2's comparisons (G5 to G9) cover pillar, platform and language. The only hook
+    comparison (G16) bears on T3, and without P1 and P8 a hook comparison for T2 has 1
+    piece of content on one side.
+  - The instruction gives the answer as an example: "when a promo lost viewers in its
+    first seconds, ask for a promo with another opening, not a different kind of video".
+    Both drop-off requests in runs 4 and 5 follow it word for word, whatever the
+    evidence.
+  - "Keep the flagged kind" and "change only what the hypothesis is about" conflict when
+    the hypothesis is about the kind (here, the pillar).
+  - Nothing checks that what a request changes is what its tested hypothesis's
+    comparison is about.
+- **Why it matters:** the test the strategist reads next month cannot confirm or refute
+  the hypothesis it names. This is the F-038 problem in a new form. The request itself
+  (try a new opening on a promo) is reasonable, but it is an untested idea and is
+  presented as a test.
+- **Fix direction (proposal):**
+  - Replace the example with the rule it stands for: a request changes what the cited
+    comparison is about. When the only comparison is about the flagged post's own kind,
+    the request either tries that kind's alternative, or keeps the kind and says the
+    change is untried (`tests` 0, and a review note that no comparison is about
+    openings).
+  - Ask that a hypothesis say why the result may have happened ("promo videos may lose
+    more viewers in their first seconds"), not what to try.
+  - Have finalize flag a request whose title or brief changes the opening ("opening",
+    "first line", "hook", "question") when no G its tested hypothesis cites is a hook
+    comparison.
+
+### F-054: Client card actions repeat the code's finding; the "16" check is a false alarm caused by the card rule (medium, draft-insights, September run 5)
+
+- **Observed:**
+  - September T3's card renders as "We posted 6 of the 16 posts planned for September.
+    We posted 6 of the 16 posts planned for September; send us three educational videos
+    for October, and we'll post them." The same sentence appears twice.
+  - September T1's card renders as "48% of the people who started watching your English
+    Instagram video stopped in the first 3 seconds. Your English Instagram video had 52%
+    of viewers still watching after 3 seconds, below the 90-day average of 57%; send us
+    two more…". That is the same drop-off twice, and it brings "90-day average" onto the
+    card, where the code's wording is "your usual".
+  - The only check is "16" in T3's card action ("in the data, but not in what it cites
+    (G2 … G6)"). The number is right: it is T3's quota, from the finding. The real
+    defect, the repeat, is not flagged. "6" passes only because G3's 5.76% rounds to 6.
+  - October's three actions start from the ask and repeat nothing.
+- **Evidence:**
+  - `insight_texts` checks the card action and button against `action["evidence"]`
+    plus the quantity, not the trigger. A replay that also allows the trigger's numbers
+    clears the "16" check and changes nothing else in either month.
+  - The context gives the finding "(do not write your own)", and the instruction asks
+    for "one sentence that follows from that finding". Neither says the action is shown
+    right after the finding and must not repeat it.
+  - `CLIENT_TERMS` has "baselines?" but not "90-day" or "average".
+- **Why it matters:** the card is the one text that may reach the client, and a
+  repeated sentence shows it was not read before it went out. The false alarm points the
+  strategist at the right number and away from the actual defect.
+- **Fix direction (proposal):**
+  - Let the card action and button use their trigger's numbers too, as tests already
+    may.
+  - Say in the instruction that the action is shown right after the finding: start from
+    the ask ("Send us…"), and never restate the finding or its numbers.
+  - Have finalize flag a card action that repeats the finding: two or more of the
+    finding's numbers, or most of its words.
+  - Add "90-day" to `CLIENT_TERMS`. The card's own wording is "your usual".
+
+### F-055: The look-alike check at 0.25 flags a promo and an educational request on boilerplate words; duplicates and different requests now overlap in score (medium, draft-insights, October run 4)
+
+- **Observed:**
+  - Run 4 flags T2/T3. T2 asks for "two English promo videos like your
+    visa-success-story video, but open with a different first line". T3 asks for "three
+    educational videos explaining practical steps for students preparing a visa
+    application". These are different requests.
+  - Their score is 0.27 (7/26). The shared words are please, send, video, videos, visa,
+    explaining and different.
+  - The real duplicates score 0.28 (run 2 T1/T3), 0.35 (run 4 T1/T3) and 0.50 (run 1
+    T1/T2). Different same-category requests score 0.07 to 0.27, with run 4's T1/T2 at
+    0.23. See the table in "Re-test (runs 4 and 5)".
+  - The real T1/T3 duplicate also persists: the quota request is told to ask for "what
+    the comparisons show works best", which in October is the educational video T1 asks
+    for. That instruction overrides "never the same kind of video for two triggers".
+- **Evidence:**
+  - `FILLER` removes generic words but not request boilerplate ("please", "send", the
+    category's own noun in both numbers, the client's subject "visa").
+  - The F-046 fix's G-overlap idea no longer applies: since F-051, a post trigger's
+    comparisons are never the quota trigger's (run 4's T1/T3 share no G).
+- **Why it matters:** one of run 4's two alerts is false, and the margin between the
+  real and false scores is 0.01. A false alarm next to a real one teaches the strategist
+  to skip both. This is the F-029 pattern.
+- **Fix direction (proposal):**
+  - Compare what is asked for: the category plus the kind named in title and brief
+    (educational, promo, success story, case study). On all 10 pairs in runs 1 to 5 this
+    flags exactly the 3 duplicates.
+  - Or add request boilerplate to `FILLER` (please, send, video(s), photo(s), post(s),
+    story/stories, visa, explaining, like, different, same, English, Nepali, platform
+    names). That gives duplicates 0.20 to 0.40 and different same-category pairs at most
+    0.07, so a threshold of 0.15 separates them in runs 1 to 5.
+  - For the duplicate itself, decide in the design whether the quota request may add to
+    a post trigger's request (and then say so on one card) or must ask for the
+    best-performing kind no other request asks for. Then word the instruction to match.
+
+### F-056: video_003's outdated topic tags send the misheard organisation name to the model (low, latent, draft-insights, runs 1 to 5)
+
+- **Observed:** in both plans, P1 and P8 (video_003) carry "entity
+  cleary-consulting-group", the speech-to-text mishearing of Tilicho Consulting Group
+  (F-011). The same posts' captions say "Contact Tilicho Consulting Group", so the model
+  gets two names for the organisation. No text in runs 1 to 5 used the wrong one.
+- **Evidence:**
+  - `output/tag-topics/video_003-*/metadata.json` was made 2026-11-05T08:42 and records
+    no `organisation.json` among its inputs. F-011's fix makes such a result `outdated`
+    until it is re-made.
+  - draft-insights' prepare reads topic tags without checking whether they are outdated
+    and gives no warning. Its summary says "topic tags for 6".
+  - The ORGANISATION section tells the model to spell the name as given, which is why
+    nothing leaked.
+- **Why it matters:** a request brief or review note could name "Cleary Consulting
+  Group". The prompt is the only guard, which is what F-011 replaced with code for
+  generate-copy.
+- **Fix direction (proposal):**
+  - Have prepare warn when a post's topic tags, copy or visual tags are outdated (and
+    name them).
+  - Or leave out `entity` tags that match `heard_as` or are not the organisation's name.
+  - Re-run `/tag-topics` on video_003.
+
+### F-057: October's three requests all ask for educational videos because their evidence does; the look-alike check is right by its rule, but its advice and the "never the same kind" rule do not fit (medium, draft-insights, October run 6)
+
+- **Observed:**
+  - T1 asks for "two educational TikTok videos in the same Nepali style as your
+    successful video" (tests 1, G4).
+  - T2 asks for "two English educational Instagram videos", keeping P8's format,
+    platform, language and opening style (tests 1, G7).
+  - T3 asks for "three educational videos that open with a question" (G16, G11).
+  - finalize flags T1/T2, T1/T3 and T2/T3: "both ask for educational videos; merge them
+    or make each test its own hypothesis".
+  - The client gets three cards in a row asking for educational videos: 7 in all.
+  - The model's note 4 asks the strategist to confirm that the three are "distinct from
+    the other requests".
+- **Evidence:**
+  - Each request follows its own evidence:
+    - T1's comparisons (G1 to G4) are all about P7's own features (video,
+      educational), so keeping the rest like P7 means an educational video.
+    - G7's other side (P2, P6, P7, P11) is all educational, so changing only the pillar
+      means educational.
+    - The quota request asks for "what the comparisons show works best", which is G11
+      (educational, 2×).
+  - The instruction's "never the same kind of post for two triggers" cannot be met
+    together with those three rules when one pillar leads every comparison. October
+    has had a shared-kind pair in every run: run 1 T1/T2, run 2 T1/T3, run 4 T1/T3, and
+    run 6 all three.
+  - T1 and T2 already test their own hypotheses, on different measures, bars,
+    platforms, languages and openings (engagement at 4.7% on a Nepali TikTok; still
+    watching after 3 s at 58% on an English Instagram video with a statement opening).
+    Merging them would test neither, so the check's advice is wrong for that pair.
+  - T2's controls are only in its brief. Its card says "two English educational
+    videos", while T3's card asks in the same month for educational videos that open
+    with a question. A client who sends question-opening videos for both breaks T2's
+    test.
+- **Why it matters:** three "merge them" alerts on an overlap the evidence produces
+  teach the strategist to skip the check (the F-029 pattern), and following the advice
+  for T1/T2 would wreck two tests. The client sees the same ask three times.
+- **Fix direction (proposal; recommended: leave the decision to the strategist with a
+  correct check, rather than a code merge or the quota request taking over):**
+  - Do not merge in code: merged requests test neither hypothesis. Do not let the quota
+    request absorb the others: two tests would become one untested ask (`tests` 0).
+  - In the design and the instruction, replace "never the same kind of post for two
+    triggers" with: requests may share a kind when their evidence points there, and
+    each brief says what sets it apart (platform, language, opening). A test's card
+    also names its controls ("two English Instagram videos that start with a
+    statement").
+  - Narrow `same_request_checks` to pairs that nothing sets apart (same category, kind,
+    platform and language, as the fields and title name them). Word it "ask for the same
+    thing; merge them or say what sets them apart". Replay it on runs 1 to 6: it should
+    still catch run 4's T1/T3 (both "educational videos", language any, no platform).
+  - Replace the alerts on pairs with the quota request by one code-written line in
+    `insights.md`: "November asks for 7 videos, all educational (T1 2, T2 2, T3 3);
+    decide whether the client sees them as one ask."
+
+### F-058: T1's test bar is below what its own comparison's videos already average, so an ordinary video would confirm it (low, draft-insights, October run 6)
+
+- **Observed:**
+  - T1's hypothesis is "Video format may be one factor worth testing" (G4: video posts
+    5.02% vs 3.53%, 1.4×, without P7).
+  - Its test: "If 2 new video posts have an average engagement rate above 4.7%, that
+    would support this possibility".
+  - The flagged result is 10.23%, 2.2× the average.
+  - The model's note 2: "check whether the proposed repeat is a useful test before
+    sharing".
+- **Evidence:**
+  - 4.7% is the trigger's bar (the 90-day average), so the F-045 check passes.
+  - But G4's videos already average 5.02% without P7. The test therefore predicts an
+    ordinary video, not the flagged result, and a 1.4× comparison cannot account for a
+    2.2× one.
+  - Run 4's T1 cited G3 (educational, 1.7×) and set the bar at its 5.94%. Both answers
+    pass the code, so the bar depends on the model's choice.
+- **Why it matters:** a confirmed T1 next month would say little about why P7 did well.
+  The strategist could read a routine result as support for the hypothesis.
+- **Fix direction (proposal):**
+  - For the engagement trigger (a post that did better), make the number to beat the
+    higher of the trigger's bar and the average of the side the request asks for in the
+    cited comparison. prepare can state it per comparison under the trigger.
+  - Have finalize flag a confirm_if below that average.
+  - Keep the 90-day average for a drop-off trigger. There the test asks whether the
+    change brings the post back to normal, so T2's 58% is right.
+
+### F-059: T1's request asks for Nepali TikTok videos, but its language is "any" (low, draft-insights, October run 6)
+
+- **Observed:** T1's title is "2 more Nepali TikTok videos", and its brief is "…in the
+  same Nepali style as your successful video". The request's `language` is `any`, and
+  `insights.md` shows "any" in the Language column.
+- **Evidence:**
+  - The instruction allows "ne only when a comparison about Nepali posts supports it".
+    No such comparison bears on T1: with P7 left out (F-051), only one other Nepali post
+    remains, and G14 and G17 bear on T3.
+  - The same instruction says to keep the rest like the flagged post, which is in
+    Nepali. The model followed both rules, one in the field and one in the text.
+  - finalize does not compare the language field with the title or brief.
+- **Why it matters:** the asset request Pulse would create carries language "any" for an
+  ask that only makes sense in Nepali. The client or the editor could film it in
+  English.
+- **Fix direction (proposal):**
+  - For a post trigger's request, set the language to the flagged post's language
+    unless the tested comparison is about language. prepare knows each post's language.
+  - Have finalize flag a title or brief that names Nepali or English when the field
+    says otherwise.
+
+### F-060: T1's brief calls the flagged TikTok video "question-led", but it used a curiosity hook, and the brief adds a change no T1 comparison is about (low, draft-insights, October run 8)
+
+- **Observed:**
+  - T1's brief: "Send us two educational videos for TikTok, each covering a different
+    practical visa question, with the same Nepali language and question-led approach as
+    your flagged video."
+  - P7 (the flagged TikTok post, ci-2610-02) used hook 3 of video_014's copy, and its
+    style is curiosity: "Visitor visa refusals can hinge on a factor applicants may
+    overlook." The question hook ("Are you planning a visitor visa application for your
+    parents?") is P2's, the same video posted on Instagram.
+  - The hypothesis T1's request tests cites G3 (educational vs other pillars,
+    engagement), and P7 is already educational. A new video that opens with a question
+    also changes the hook style, which G3 is not about. The only hook comparison (G16,
+    question hook 1.3×) bears on T3.
+  - No check fired, and no review note mentions the hook.
+- **Evidence:**
+  - The plan lists P7 as "opening hook used (curiosity)" and P2 as "(question)", and it
+    marks P7 "same video as P2, posted again on tiktok". The model probably took the
+    video's Instagram hook to be the TikTok post's.
+  - F-053's third proposal was not built: flag a request that changes the opening when
+    no comparison its tested hypothesis cites is about hooks. The F-053 fix covered only
+    the example and the advice wording.
+- **Why it matters:**
+  - The brief tells the client something untrue about their own best video.
+  - If the client follows it, the test mixes two changes. A result above 5.94% could
+    come from the question opening as much as from the pillar.
+  - It is low because one strategist edit fixes it (take out "and question-led
+    approach"), and the test still names its measure and bar.
+- **Fix direction (proposal):**
+  - In prepare, give the flagged post's hook style in its trigger line ("P7 opened with
+    a curiosity hook"), next to the rule that the request keeps the rest like the
+    flagged post.
+  - Have finalize flag a post trigger's brief that names a hook style (question,
+    curiosity, statement, "-led", "opening") other than the flagged post's, when no
+    comparison its tested hypothesis cites is a hook comparison.

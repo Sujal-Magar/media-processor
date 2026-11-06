@@ -1,0 +1,19 @@
+{
+  "month_period": "2026-10",
+  "evaluated_at": "2026-10-31T23:59:00+00:00",
+  "baseline": {
+    "window_days": 90,
+    "window_start": "2026-08-03",
+    "window_end": "2026-10-31",
+    "posts": 12,
+    "engagement_rate_mean": 2.4,
+    "engagement_rate_sd": 0.9,
+    "retention_3s_mean": 58.0
+  },
+  "quota": { "monthly_posts": 16, "published": 2 },
+  "triggers": [
+    { "trigger_rule_id": "engagement_gt_200pct_mean", "content_item_id": "ci-0001" },
+    { "trigger_rule_id": "hook_dropoff_gt_45pct", "content_item_id": "ci-0002" },
+    { "trigger_rule_id": "pace_behind_quota", "content_item_id": null }
+  ]
+}

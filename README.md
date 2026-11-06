@@ -13,6 +13,7 @@ the same layout.
 | generate-copy | `/generate-copy` | a video already transcribed and tagged | draft copy: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtag clusters, an optional translation (`.md`, `.json`) | OpenAI text model (official API)                |
 | draft-report  | `/draft-report`  | one month's numbers (`.json`)          | draft monthly report narrative: a headline, three short paragraphs, the top post, a line per highlight and tile, next month's plan in the client's words (`.md`, `.json`) | OpenAI text model (official API)                |
 | translate-subtitles | `/translate-subtitles` | a video already transcribed            | English-only and Nepali-only subtitles (`.vtt`, `.srt`), cue for cue with the same times as the mixed-language ones                                                       | OpenAI text model (official API)                |
+| draft-insights | `/draft-insights` | one month's triggers (`.json`) and its numbers | draft strategic insights: per flagged result, hypotheses to test, a proposed asset request and a client card, each `Proposed` (`.md`, `.json`)                      | OpenAI text model (official API)                |
 
 | Pipeline      | Skill            | Runs                                                                        |
 | ------------- | ---------------- | --------------------------------------------------------------------------- |
@@ -64,6 +65,30 @@ that matches nothing makes the draft incomplete. It describes what happened, not
 the next-month list only rewords the strategist's plan. The draft is for the strategist
 to review, edit and sign off; nothing is sent.
 
+`/draft-insights` drafts strategic insights (Pulse C18b) for the results Pulse's anomaly
+rules flag: a post's engagement above 2 × the 90-day average, more than 45% of viewers
+gone in the first 3 seconds, posting 2 or more behind the monthly quota. Until those
+rules exist, the triggers come from a hand-written file
+(`fixtures/insights-input.example.json` shows the shape; mock months go in
+`input/insights/`), and the posts from the report inputs in `input/reports/` whose
+months the 90-day window covers. Prepare re-checks each trigger against the numbers,
+holds back one on a post whose data is incomplete (and leaves that post out of
+everything), and works out every number the model may use: each trigger's size (10.23%
+is 2.2× the average) and comparisons between groups of posts with complete data
+(pillar, platform, language, video or picture, hook style, what the pictures show), each
+side with 2 or more different pieces of content (a video posted on two platforms counts
+once) and a difference of at least 10%; a trigger's comparisons leave out its own post
+(and the same video posted again), so a post never explains itself. Each client card's
+first sentence is written from the trigger's numbers, not by the model.
+For each trigger the model gives an observation, one or two hypotheses worded as
+possibilities, each with a measured test of what would confirm or refute it, a proposed
+asset request for next month that tests one of them (title, category, a quantity from 1
+to 3, language, brief) and a client card draft in the Results card's style; or says there
+is not enough evidence. For posting behind the quota it gives no hypotheses (the numbers
+cannot say why fewer posts went out), only what to send to catch up. Every insight is
+`Proposed` and the file a draft for the strategist; nothing reaches the client, and
+acceptance and asset requests belong to Pulse.
+
 `/transcribe` also writes subtitles (`transcript.vtt`, `transcript.srt`) in the language
 spoken, which for many videos mixes Nepali and English. `/translate-subtitles` turns them
 into an English-only and a Nepali-only track, in one text request. The track in the
@@ -109,6 +134,7 @@ Put a file in `input/`, then in Claude Code:
 /tag-visuals input/interview.mov every 2 seconds high detail
 /draft-report input/reports/2026-10.json
 /translate-subtitles input/interview.mov
+/draft-insights input/insights/2026-10.json
 ```
 
 `/process-video` accepts the words of both processors:
@@ -194,6 +220,15 @@ output/translate-subtitles/interview-1a2b3c4d/
 │                     needs checking, review status (`draft`), tokens used
 ├── metadata.json     inputs, languages, model, request plan, status
 └── history/<time>/   earlier results that `force` replaced (only after a `force`)
+
+output/draft-insights/2026-10-1a2b3c4d/     (named after the month's trigger file)
+├── insights.md       per trigger: what it found, the hypotheses with how to test them,
+│                     the proposed request and the client card; what was held back or
+│                     lacked evidence, what needs checking, the data each part rests on
+├── insights.json     the same, sentence by sentence with its evidence, each insight
+│                     `Proposed`, plus what was dropped, review status (`draft`), tokens
+├── metadata.json     month, inputs, baseline, quota, model, request plan, status
+└── history/<time>/   earlier results that `force` replaced (only after a `force`)
 ```
 
 You can then ask Claude things like "summarize the transcript" or "in which scenes does
@@ -202,7 +237,7 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
 ## Safety and cost
 
 - **Paid steps always ask.** `.claude/settings.json` puts ElevenLabs `speech_to_text`
-  and the OpenAI scripts (visual tags, topics, copy, reports and subtitle translation) under `ask`, and blocks every
+  and the OpenAI scripts (visual tags, topics, copy, reports, subtitle translation and insights) under `ask`, and blocks every
   other paid ElevenLabs tool (voice cloning, text-to-speech, music, phone calls, ...).
 - **No double charges by accident.** The same source file is not processed twice unless
   you say `force`, and then the previous result is kept in `history/<time>/` (named after
@@ -216,8 +251,10 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
   receives the transcript text, the visual tags and the clearly read on-screen text
   (copy also the topic tags and your brief), never a file. For reports, OpenAI receives
   the month's numbers and, for posts made from a video, its topic tags and hook; for
-  subtitle translation, the subtitle cues' text. Neither sees your originals or other
-  files.
+  subtitle translation, the subtitle cues' text; for insights, the triggers, the
+  baseline, the comparisons prepare worked out and the posts with complete data (for a
+  video post also its topic tags, hook, call to action and visual tags). Neither sees
+  your originals or other files.
 - **ElevenLabs keeps the audio.** The pinned MCP server (`elevenlabs-mcp` 0.12.2) always
   sends requests with logging on, so ElevenLabs stores the audio and transcript under its
   normal retention. The tool can't turn this off; zero retention would need another route
@@ -246,7 +283,9 @@ media-processor/
 ├── lib/tags.py                    tag wording (lowercase, hyphens) and tag libraries
 ├── lib/material.py                earlier results as text for a model (topics, copy)
 ├── lib/numbers.py                 numbers in model text checked against the data given
-├── fixtures/                      example inputs (report-input.example.json)
+├── lib/report_input.py            a month's report input read and checked (reports, insights)
+├── lib/wording.py                 causal, internal and jargon wording checks
+├── fixtures/                      example inputs (report-input, insights-input)
 ├── lib/organisation.py            the organisation's own name, hashtags and misheard forms (organisation.json)
 ├── organisation.json              your organisation's details (not in git; see the example)
 ├── servers/<provider>.py          starts a provider's MCP server (.mcp.json)
@@ -293,6 +332,9 @@ python3 processors/draft-report/draft.py work/draft-report/<job-folder>       # 
 
 python3 processors/translate-subtitles/prepare.py input/interview.mov --languages en,ne
 python3 processors/translate-subtitles/translate.py work/translate-subtitles/<job-folder>   # paid
+
+python3 processors/draft-insights/prepare.py input/insights/2026-10.json
+python3 processors/draft-insights/draft.py work/draft-insights/<job-folder>   # paid
 ```
 
 ## Settings
@@ -309,6 +351,8 @@ Optional values in `.env` (see `.env.example`):
 | `OPENAI_REPORT_REASONING_EFFORT` | `low`      | reasoning for reports; `unset` sends no setting          |
 | `OPENAI_TRANSLATE_MODEL`       | vision model | text model for `/translate-subtitles`                    |
 | `OPENAI_TRANSLATE_REASONING_EFFORT` | `low`   | reasoning for translation; `unset` sends no setting      |
+| `OPENAI_INSIGHT_MODEL`         | vision model | text model for `/draft-insights`                         |
+| `OPENAI_INSIGHT_REASONING_EFFORT` | `low`     | reasoning for insights; `unset` sends no setting         |
 
 ## Limits
 
@@ -397,5 +441,13 @@ pass` skips the re-read, and so does `high detail`. Each text is marked `clear` 
   them, as far as the sentence's wording shows the measure. People
   are never named, but nothing detects a name the model wrote anyway. Video plays are
   D2's `views_count`, which counts plays, not people.
+- `/draft-insights` checks numbers and wording, not reasoning: a hypothesis can cite the
+  right comparison and still be a poor explanation, which is why each is a possibility
+  with its own test and the strategist decides. Comparisons rest on little content (2 or
+  3 videos or pictures a side is common), and with only a few videos tagged, visual-tag
+  comparisons rarely have 2 on each side. The baseline's average comes from the trigger file, while comparisons
+  use only the posts in `input/reports/`, so they can disagree (prepare warns). The
+  anomaly thresholds, the quota (16 posts a month here; Pulse's calendar documents say
+  20) and the quota's unit are not agreed in Pulse (DEFINITIONS_TO_AGREE 15 and 26).
 - A failed transcription keeps the parts that succeeded (`"complete": false`);
   re-running needs `force` and pays for every part again.

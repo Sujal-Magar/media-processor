@@ -31,6 +31,8 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for `lib`
 
 from lib.numbers import ratios, unmatched
+from lib.report_input import SLOTS
+from lib.wording import CAUSAL, DATA_GAP, INTERNAL, JARGON
 from lib.workspace import (
     archive_previous,
     fail,
@@ -42,31 +44,12 @@ from lib.workspace import (
     write_text,
 )
 
-# Metric: how the material names it. The PRD's dashboard list (reach, engagement, video
-# views, follower growth, link clicks, enquiries where tracked); video views are D2's
-# views_count, which counts plays, not people.
-METRICS = {
-    "reach": "people reached",
-    "video_views": "video plays (times the videos were played, not people)",
-    "engagement_rate": "engagement rate, (likes + comments + shares + saves) / people "
-    "reached x 100",
-    "new_followers": "new followers",
-    "link_clicks": "link clicks",
-    "enquiries": "enquiries",
-}
 # The report's metric row (Pulse screen 7), with the label each number goes under.
 TILES = {
     "reach": "people reached",
     "video_views": "video plays",
     "enquiries": "enquiries",
     "new_followers": "new followers",
-}
-PLATFORMS = ("instagram", "tiktok", "linkedin", "youtube")  # D1 content_variants.platform
-# C17a's Top 3 highlights; the top post of the month is the highest-reach one.
-SLOTS = {
-    "highest_reach": "Highest reach",
-    "highest_engagement": "Highest engagement",
-    "best_retention": "Best retention",
 }
 PARAGRAPHS = {
     "what_happened": "What happened",
@@ -82,30 +65,8 @@ MAX_TOP_POST_SENTENCES = 2
 REF_PATTERN = re.compile(r"\b(?:M|PL):[a-z_]+|\b[PN]\d+\b")
 # A sentence ends at . ! or ? before a capital or digit (48.2K and 9.35% stay whole).
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(])")
-# Words that claim a cause: the data shows what happened, not why.
-CAUSAL = re.compile(
-    r"\b(?:because|due to|thanks to|led to|leads to|caused?|causing|drove|driven|"
-    r"driving|resulted in|results in|that's why)\b",
-    re.IGNORECASE,
-)
-# Words that say data is missing: "because" next to them explains a gap, not a result.
-DATA_GAP = re.compile(
-    r"\b(?:incomplete|missing|not recorded|not shown|held back|not tracked|not counted|"
-    r"left out|leaves? out|leaving out|with complete (?:data|numbers))\b",
-    re.IGNORECASE,
-)
 # Words that say a number went down.
 FELL = re.compile(r"\b(?:down|fell|fewer|lower|dropped|drop|less|dip(?:ped)?|slower|quieter)\b", re.IGNORECASE)
-# How the report is made, which the client never needs to read.
-INTERNAL = re.compile(
-    r"\b(?:report engine|engine|snapshots?|data quality|highlight slots?)\b", re.IGNORECASE
-)
-# Jargon the Pulse docs keep off client surfaces (PROJECT_SCOPE pre-flight scan and
-# plain-English rule).
-JARGON = re.compile(
-    r"\b(?:impressions?|CTR|CPC|KPIs?|conversions?|funnel|video completions?)\b",
-    re.IGNORECASE,
-)
 # Comparisons beyond last month, which only earlier months can support ("the strongest
 # post" ranks this month's posts and is not one).
 SUPERLATIVE = re.compile(

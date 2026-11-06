@@ -18,6 +18,7 @@ from lib.openai_api import (
     DEFAULT_VISION_MODEL,
     OpenAIError,
     copy_model,
+    insight_model,
     report_model,
     request,
     translate_model,
@@ -65,7 +66,7 @@ def main() -> None:
         tool_check("uvx", "sudo pacman -S uv"),
         ("work/ writable", os.access(WORK, os.W_OK), str(WORK)),
         key_check("ELEVENLABS_API_KEY", "needed by /transcribe"),
-        key_check("OPENAI_API_KEY", "needed by the OpenAI processors (tagging, topics, copy, reports, translation)"),
+        key_check("OPENAI_API_KEY", "needed by the OpenAI processors (tagging, topics, copy, reports, translation, insights)"),
     ]
     if key_source("OPENAI_API_KEY"):
         vision = (
@@ -80,6 +81,8 @@ def main() -> None:
             checks.append(openai_model_check(report_model(), "OpenAI report model"))
         if translate_model() not in (vision, topic_model(), copy_model(), report_model()):
             checks.append(openai_model_check(translate_model(), "OpenAI translation model"))
+        if insight_model() not in (vision, topic_model(), copy_model(), report_model(), translate_model()):
+            checks.append(openai_model_check(insight_model(), "OpenAI insight model"))
     for name, ok, detail in checks:
         print(f"{'ok  ' if ok else 'FAIL'}  {name:<20} {detail}")
     sys.exit(0 if all(ok for _, ok, _ in checks) else 1)
