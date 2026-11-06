@@ -72,6 +72,15 @@ def copy_model() -> str:
     )
 
 
+def report_model() -> str:
+    """The model draft-report uses: OPENAI_REPORT_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_REPORT_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
 def request(
     method: str,
     path: str,

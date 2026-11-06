@@ -4,15 +4,17 @@
 
 - **C06b** Media transcription & visual tagging: `/transcribe`, `/tag-visuals`, `/tag-topics`
 - **C09b** Creative copywriting & script generation: `/generate-copy`
+- **C17b** Report narrative synthesis: `/draft-report`
 
 ## What it is
 
 A repo you open in **Claude Code**. It turns a media file into searchable results and draft social copy:
 
-- `/transcribe`: speech to text with **ElevenLabs** (English, Nepali), with optional speaker labels and timestamps.
+- `/transcribe`: speech to text with **ElevenLabs** (English, Nepali), with optional speaker labels and timestamps, plus subtitles in WebVTT and SRT (cue times estimated within each part).
 - `/tag-visuals`: what is visible (objects, scenes, activities, attributes) and readable on-screen text, with time ranges, using an **OpenAI** vision model.
 - `/tag-topics`: what a file is about (type, topics, named things), each tag citing its evidence, from the transcript and visual tags.
 - `/generate-copy`: draft copy from the same results: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtags and an optional translation (e.g. Nepali).
+- `/draft-report`: the narrative of a client's monthly report (headline, three short paragraphs, top post, highlight and tile lines, next month's plan in the client's words) from that month's numbers, each sentence citing its data and every number checked against it. The numbers are mocked until Pulse's analytics exist.
 - `/process-video`: runs transcription and visual tagging on one video at the same time, then topics.
 
 ## Why it is built this way
@@ -27,6 +29,8 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 | Free-form tags that reuse existing tags                          | Any organisation can use it, while the model reuses the folder's existing wording, so "laptop" doesn't become "notebook". New tags are flagged.                                         |
 | Topics and copy work from results, not the file                  | One cheap text request each. Every tag, hook and soundbite cites the footage it rests on, so a reviewer can check it.                                                                   |
 | The organisation's name comes from `organisation.json`           | Speech-to-text can mishear it (it wrote the municipality "Tilottama" for "Tilicho"). Topics and copy use the spelling in this file.                                                     |
+| Report numbers are given to the model, never left to it          | The model only words the month: every number it writes is checked against the data its sentence cites, and rankings of posts are worked out by prepare, not by the model.               |
+| Report data is mocked for now                                    | Pulse's analytics (C15) and report compilation (C17a) don't exist yet, so `input/reports/<month>.json` stands in for them, in the shape their documents define.                         |
 
 ## How it works
 
@@ -34,7 +38,8 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 input/<file>
   ├─ /transcribe:    prepare.py (FFmpeg: extract audio, skip silence, split at pauses)
   │                  → ElevenLabs MCP speech_to_text, one request per part
-  │                  → finalize.py → output/transcribe/<name>-<hash>/transcript.md, .json
+  │                  → finalize.py → output/transcribe/<name>-<hash>/transcript.md, .json,
+  │                    subtitles .vtt and .srt (subtitles.py)
   │
   ├─ /tag-visuals:   prepare.py (FFmpeg: a frame per scene change plus one every 5 s;
   │                  collects existing tags)
@@ -51,6 +56,14 @@ input/<file>
                      → generate.py: one OpenAI text request
                      → finalize.py → output/generate-copy/<name>-<hash>/copy.md, .json
 
+input/reports/<month>.json
+  └─ /draft-report:  prepare.py (the month's totals, platforms, post snapshots, highlights,
+                     the strategist's plan; leaders per measure; topic tags and hook of
+                     posts made from a video in input/)
+                     → draft.py: one OpenAI text request
+                     → finalize.py (numbers and rankings checked against the data)
+                     → output/draft-report/<month>-<hash>/report.md, .json
+
 /process-video = transcribe and tag-visuals in parallel, then tag-topics.
 ```
 
@@ -63,18 +76,22 @@ Each processor follows the same pattern: **prepare (free, local) → paid step �
 - Silent audio and audio-only files are skipped for free.
 - Partial results are kept. An interrupted tagging run resumes and pays only for what's missing.
 - Claude cannot read `.env` (the keys). Scripts print counts and paths, not transcripts, tags or copy.
-- People are never named in topics or copy. Copy is a draft (`review_status: draft`) and is never published.
+- People are never named in topics, copy or reports. Copy and reports are drafts (`review_status: draft`) and are never published or sent.
 
 ## Layout
 
 ```
-.claude/skills/        setup, transcribe, tag-visuals, tag-topics, generate-copy, process-video
+.claude/skills/        setup, transcribe, tag-visuals, tag-topics, generate-copy, draft-report,
+                       process-video
 .claude/settings.json  permissions: allowed / asks first / blocked
 processors/<name>/     prepare.py, paid step, finalize.py
 lib/                   media.py (FFmpeg), workspace.py (paths, files), openai_api.py,
-                       tags.py, material.py (results as text), organisation.py
+                       tags.py, material.py (results as text), organisation.py,
+                       numbers.py (numbers in model text checked against the data)
+fixtures/              example inputs (report-input.example.json)
 servers/elevenlabs.py  starts the ElevenLabs MCP server (.mcp.json)
 scripts/check_setup.py free environment and key checks
 organisation.json      the organisation's name, website, hashtags (git-ignored)
-input/ work/ output/   files to be processed, temporary jobs, results (all git-ignored)
+input/ work/ output/   files to be processed (input/reports/: a month's numbers), temporary
+                       jobs, results (all git-ignored)
 ```

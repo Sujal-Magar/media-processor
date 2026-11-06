@@ -7,12 +7,15 @@
       "Bash(python3 scripts/check_setup.py)",
       "Bash(python3 processors/transcribe/prepare.py *)",
       "Bash(python3 processors/transcribe/finalize.py *)",
+      "Bash(python3 processors/transcribe/subtitles.py *)",
       "Bash(python3 processors/tag-visuals/prepare.py *)",
       "Bash(python3 processors/tag-visuals/finalize.py *)",
       "Bash(python3 processors/tag-topics/prepare.py *)",
       "Bash(python3 processors/tag-topics/finalize.py *)",
       "Bash(python3 processors/generate-copy/prepare.py *)",
       "Bash(python3 processors/generate-copy/finalize.py *)",
+      "Bash(python3 processors/draft-report/prepare.py *)",
+      "Bash(python3 processors/draft-report/finalize.py *)",
       "Bash(ffprobe *)",
       "mcp__elevenlabs__check_subscription",
       "mcp__elevenlabs__list_models",
@@ -24,6 +27,7 @@
       "Bash(python3 processors/tag-visuals/tag.py *)",
       "Bash(python3 processors/tag-topics/tag.py *)",
       "Bash(python3 processors/generate-copy/generate.py *)",
+      "Bash(python3 processors/draft-report/draft.py *)",
       "Read(./output/**)"
     ],
     "deny": [

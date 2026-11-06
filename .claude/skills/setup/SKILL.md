@@ -15,11 +15,11 @@ Nothing here costs money.
      user to paste the key into the chat, and never read `.env`.
    - OPENAI_API_KEY: the same, with a key from https://platform.openai.com/api-keys after
      `OPENAI_API_KEY=`.
-   - OpenAI model access / OpenAI topic model: the script asked OpenAI (free) whether
-     the key can use the vision model, and the topic model when `OPENAI_TOPIC_MODEL` is
-     set to another one. `invalid_api_key` = wrong key; `model_not_found` = set
-     `OPENAI_VISION_MODEL` (tagging) or `OPENAI_TOPIC_MODEL` (topics) in `.env` to a
-     model the key can use.
+   - OpenAI model access / topic / copy / report model: the script asked OpenAI (free)
+     whether the key can use the vision model, and the topic, copy and report models
+     when `OPENAI_TOPIC_MODEL`, `OPENAI_COPY_MODEL` or `OPENAI_REPORT_MODEL` set another
+     one. `invalid_api_key` = wrong key; `model_not_found` = set that variable
+     (`OPENAI_VISION_MODEL` for tagging) in `.env` to a model the key can use.
 
 2. Check that the `mcp__elevenlabs__*` tools are available. If they are not:
    - the key may be missing (step 1), or the server failed to start;
@@ -55,6 +55,6 @@ Nothing here costs money.
    key, then restart Claude Code. Only Speech to Text is required; the read permissions just
    make `/setup` more informative.
 
-End with one line each for `/transcribe` (ElevenLabs key and MCP tools), `/tag-visuals`
-and `/tag-topics` (OpenAI key and model access) and `/process-video` (all): ready, or
-what is missing.
+End with one line each for `/transcribe` (ElevenLabs key and MCP tools), `/tag-visuals`,
+`/tag-topics`, `/generate-copy` and `/draft-report` (OpenAI key and model access) and
+`/process-video` (all): ready, or what is missing.

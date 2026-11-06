@@ -1,4 +1,4 @@
-# Test findings: /generate-copy
+# Test findings: /generate-copy, /draft-report
 
 Paid test campaign for the new `generate-copy` processor. Each run's result was reviewed
 read-only against `.claude/skills/generate-copy/SKILL.md`,
@@ -81,7 +81,175 @@ Run 2 note: the test session's closing paragraph came through garbled ("…not t
 sentence", "any changesew file next to copy.md"). This is probably damage from pasting
 into the terminal, so it is not logged as a finding.
 
-## Fix status (2026-11-05, uncommitted, awaiting re-test)
+## draft-report runs
+
+Paid test of `/draft-report` (Pulse C17b) on the mock months in `input/reports/`.
+Reviewed read-only against `processors/draft-report/{prepare,draft,finalize}.py`,
+`lib/numbers.py`, the skill, the input JSON and the July example on screen 7 of the
+Pulse design. Nothing was run again.
+
+| # | File | Status | Sentences: items saved / real sentences (headline, happened, worked, didn't land, top post) | Checks | Tokens (est / in / out) | Verdict |
+| - | ---- | ------ | ------------------------------------------------------------------------------------------- | ------ | ----------------------- | ------- |
+| 1 | `2026-10.json` (8 posts, all Full; plan N1 to N3; 3 earlier months) | complete, 0 missing, 0 dropped | 1/1, 1/3, 1/3, 1/2, 1/2; 3 highlights, 4 tiles, next month 3 | 1 (a false positive, F-021) | 3,255 / 3,178 / 1,205 | Pass with findings. Every number is right and next month follows N1 to N3, but the strategist has to edit it (F-022, F-024, F-025, F-027). F-020 applies |
+| 2 | `2026-09.json` (6 posts, P4 TikTok Partial; no plan; no earlier months) | complete, 0 missing, 0 dropped | 1/1, 2/3, 2/4, 1/2, 1/2; 3 highlights, 4 tiles, next month 0 | 2 (the "because" one is a false positive, F-021; the P4 one is met) | 2,844 / 2,744 / 1,087 | Pass on honesty: the falls are stated with their numbers, P4 is called incomplete, no superlatives, next month is empty. One highlight ranks against Partial P4 without a warning (F-023). F-020 applies |
+| 3 | `2026-10.json` re-test after the fixes (`force`; run 1 in `history/20261105-113910/`) | complete, 0 missing, 0 dropped, 0 split | 1/1, 3/3, 2/2, 1/1, 2/2; 3 highlights, 4 tiles, next month 3 | 1, correct ("What didn't land has 1 sentence") | 3,496 / 3,399 / 1,273 | Pass with findings. Every number right and on the right post; one sentence per item; no internal terms; P1 and P6 treated as one video; retention line names its measure. The engagement line says P2 had the "highest result" for likes, comments, shares or saves, though P1 led every count (F-025, seen again). Earlier months still unused (F-027). F-010 seen again |
+| 4 | `2026-09.json` re-test after the fixes (`force`; run 2 in `history/20261105-114012/`) | complete, 0 missing, 0 dropped, 3 split | 1/1, 3/3, 1/2, 1/2, 1/2; 3 highlights, 4 tiles, next month 0 | 15: 5 accurate (3 split notes, the Partial and ranking checks on what worked sentence 1), 10 false alarms (8 Partial, 1 ranking, 1 superlative) | 3,096 / 2,970 / 1,140 | Fail on accuracy. What worked sentence 1 gives P2 the highest reach among complete posts, but P1 had it (F-028). No check names that error, and 10 false alarms surround it (F-029, F-030). Highlights use the codes "P1", "P2" and "P4" (F-022, seen again). The model ignored one sentence per item in 3 of 5 sections (F-031). Falls are stated honestly in what happened, but the headline no longer says the month fell (F-032). F-010 seen again |
+| 5 | `2026-10.json` re-test after the F-028 to F-032 fixes (`force`; run 3 in `history/20261105-115227/`) | complete, 0 missing, 0 dropped, 0 split | 1/1, 3/3, 3/3, 1/1, 2/2; 3 highlights, 4 tiles, next month 3 | 1, correct ("What didn't land has 1 sentence") | 3,845 / 3,785 / 1,146 | Pass with findings. Every number and every ranking is right (all agree with LEADERS); the engagement lines are now a share (10.23%), no internal terms or codes, N1 to N3 faithful. What didn't land is one sentence again (F-034). What worked s3 presents the two posts of one video "using the same question as their opening hook" as a pattern (F-024 regressed). Earlier months still unused, 15,400 now given three times (F-027) |
+| 6 | `2026-09.json` re-test after the F-028 to F-032 fixes (`force`; run 4 in `history/20261105-115326/`) | complete, 0 missing, 0 dropped, 0 split | 1/1, 4/4, 2/2, 2/2, 2/2; 3 highlights, 4 tiles, next month 0 | 4, all real (Partial + ranking on what worked s1 and s2, which cite P4 and rank without leaving it out) | 3,456 / 3,371 / 1,332 | Pass with findings. Every number and ranking is right (F-028 not repeated); the headline says reach fell (F-032); no codes in the text (F-022); no false alarms (F-029). What worked s1 and s2 do not say P4 is left out (F-023 residual; s2 is harmless in fact, as P4's reach is recorded and lower). The order check would still miss the run-4 error on its real refs (F-033) |
+
+What was checked and passes in both runs:
+
+- **Numbers:** every number was checked by hand against the input: totals, differences
+  (13,300; 3,300; 22; three), post counts, retention 49% and 41% for October's P6, and
+  the counts (two, one) for P8. All are right, and each is on the right post, metric and
+  direction. The refs are correct, with one exception: October's what_worked cites P6
+  only as the second "financial documents video" (F-024).
+- **Falls (September):** stated plainly. Reach "down from 38,200 in August", followers
+  "22 fewer", enquiries "down by three", and the headline "down 3,300". Nothing is
+  softened or put in a better light.
+- **Changes marked "not shown":** never stated. Video plays in both months and the
+  engagement rate in September are not compared. August's 45,000 plays and 7.9% never
+  appear.
+- **Partial P4 (September):** "The TikTok post's numbers are incomplete, so we have not
+  compared it with the other posts". Rankings in the paragraphs say "among the posts
+  with complete data". The one exception is F-023.
+- **Superlatives:** September uses no "best", "ever", "yet" or "so far", only rankings
+  within the month (most, lowest, longest). October does not use its earlier months at
+  all.
+- **Names:** none in either month. People appear only as "students", "viewers" or
+  "a client's" (F-022).
+- **Next month:** October's three items are N1 to N3 reworded as "We'll …", with no
+  added promise and the same meaning. `plan_text` is kept next to each item.
+  September's list is empty, and `report.md` shows the strategist placeholder.
+- **Tiles:** all four have a line. Video plays read "played 54,400 times" and "played
+  28,600 times; this number is incomplete", never as people.
+- **Highlights:** each cites the post the report engine chose (P1, P2 and P6 in October;
+  P1, P2 and P2 in September).
+- **Lengths:** both headlines have 10 words. Counted as real sentences, the paragraphs
+  have 3/3/2 (October) and 3/4/2 (September), within 2 to 4 and as dense as screen 7
+  (3/4/2). The top post has 2 sentences.
+- **`review_notes`:** stored in full in the file. October's second note ends "…not a
+  count of people.", so the cut seen in the terminal happened only on screen.
+- **`metadata.json`:** `status` complete, the posts' `inputs` (topics and copy times)
+  and organisation, `replaces` null, and no `context`, `refs`, `allowed_numbers` or
+  `work/` path. `work/draft-report/` is empty. The token estimate was 2% and 4% over.
+- **Pasted summary:** the session reported "1 sentence" for September's what_happened,
+  but 2 items are saved, so the paste is wrong there. The session's "1 each" is the
+  item count (F-020).
+
+### Re-test (runs 3 and 4)
+
+Both months were run again with `force` after the fixes listed under Fix status. Their
+`report.json` files were checked by hand against the input JSON, `finalize.py` and
+`draft.py`. The session's paste counted 10 "rests on P4" checks for September, but
+`report.json` holds 9, so the total is 15.
+
+- **Numbers (both months):** all are right and each is on the right post or metric.
+  October: 48,200, 27, 34,900, 54,400, 214/128, 27/18, 15,400 (P1), 41% (P6 to the end),
+  and the plan's "two", "30-second" and "one … a week". September: 34.9K, 18, 34,900,
+  3,300, 28,600, 128/22, 18/three and 9,900 (P1). No number check fired, and none should
+  have. The one wrong claim has no number in it (F-028).
+- **September checks, one by one:**
+
+  | Check | Line | Verdict |
+  | ----- | ---- | ------- |
+  | superlative "strongest" | what worked s1: "…was among the strongest posts…" | false: a ranking of posts within the month, not of the month (F-030) |
+  | P4 Partial | what worked s1 | real: "more than any other post" ranks likes, comments, shares or saves against P4, whose shares and saves are not recorded, without leaving it out |
+  | P4 Partial | what worked s2: "…the post rankings leave out the TikTok post because its data is incomplete." | false: it says so |
+  | P4 Partial | didn't land s1: "Among posts with complete data, the LinkedIn case study reached the fewest people." | false: it is qualified, and cites P4 only because s2 leaves it out |
+  | P4 Partial | didn't land s2: "The TikTok post's data is incomplete, so it is left out of this comparison." | false |
+  | P4 Partial | top post s1: "The Instagram video explained a student visa grant…" (P1, P4) | false: P4 was inherited from s2 |
+  | P4 Partial | top post s2: "It reached 9,900 people; the highest-reach ranking leaves out the TikTok post because its data is incomplete." | false |
+  | P4 Partial | the three highlights, each ending "P4 is left out because its data is incomplete." | false (3) |
+  | ranking "more than any" | what worked s1 | real (as above) |
+  | ranking "fewest" | didn't land s1 | false: "Among posts with complete data" is not in `DATA_GAP`, and the "left out" clause went to s2 when the item was split |
+  | split | what worked, didn't land, top post: item 1 held 2 sentences | accurate |
+
+  All 9 Partial flags come from the model citing P4 in order to leave it out. Six are on
+  split sentences that inherited P4 from their item; the three highlights cite it
+  directly. `partial_checks` has no `DATA_GAP` exemption, so each one fires.
+- **Honesty in September:** the falls are stated with their numbers in what happened
+  ("down 3,300 from August", "down 22 from August", "down three"). Video plays are called
+  incomplete and not compared, and engagement rate is not mentioned. The headline gives
+  only the counts (F-032).
+- **Kept from runs 1 and 2:** no names; video plays are never called people; changes
+  marked "not shown" are not stated; September's next month is empty; October's N1 to
+  N3 keep their meaning ("including one in Nepali" for "one of them in Nepali");
+  `work/draft-report/` is empty; `replaces` matches each `history/` folder.
+- **October, minor:** what didn't land is one sentence without its number ("…had the
+  quietest reach among this month's posts."). It is correct and plain, but run 1 also
+  gave 1,900 and the counts, so this paragraph is thinner than before, and the check
+  fires rightly. In what worked s2, "Both were practical advice videos" means P1 and
+  P2, but the sentence cites P1 and P6. "Shared on Instagram and YouTube" (meaning
+  posted on both) can be read as the shares count. The top post's "was liked,
+  commented on, shared or saved" says nothing, and 15,400 appears in both the top post
+  and the reach highlight.
+
+### Re-test (runs 5 and 6)
+
+Both months were run again with `force` after the F-028 to F-032 fixes. Their
+`report.json` files were checked by hand against the input JSON. LEADERS was worked out
+again from the inputs, and `order_checks`, `reference_checks` and `wording_checks` were
+replayed on the saved texts in a scratch script (free; nothing written to `output/`).
+The session's "happened ?" for September is 4.
+
+- **Rankings (F-028):** all 15 ranking lines agree with the leaders among Full posts.
+  September: P1 most reach (9,900), P2 highest engagement rate (7.55%) and most watched
+  to the end (36%), P5 fewest reach (1,900). October: P1 most reach and every count
+  (15,400; 820/96/214/310), P2 highest engagement rate (10.23%), P6 most watched to the
+  end (41%), P8 fewest reach and every count (1,900; 41/2/1/1). No false ranking was
+  missed in these runs. The replay of the run-4 sentence is a different story (F-033).
+- **September checks, one by one:**
+
+  | Check | Line | Verdict |
+  | ----- | ---- | ------- |
+  | P4 Partial + ranking "highest" | what worked s1: "Your English-language Instagram videos stood out: the educational video about visitor-visa refusals had the highest share of people reached who liked, commented on, shared or saved, and the most viewers watched it to the end." (P2, P1, P4) | real: ranks on engagement rate and retention, which P4 lacks, cites P4, and says nothing about leaving it out |
+  | P4 Partial + ranking "highest" | what worked s2: "The highest-reach post was also an English-language Instagram video, about a student visa grant for master's study." (P1, P4) | real by the rule, harmless in fact: P4's reach (5,100) is recorded and lower, and the top post and highlight qualify the same claim |
+
+  Neither sentence has any wording of exclusion, so no `DATA_GAP` word is missing here.
+  The five lines that cite P4 in order to leave it out (didn't land s1, top post s1, the
+  three highlights) raise nothing, so F-029 holds. Each gap gives two checks (Partial and
+  ranking), so 4 checks cover 2 sentences. `DATA_GAP` would still miss "excluding",
+  "except", "apart from", "not counting" or "without the TikTok post" (latent).
+- **Numbers (F-026):** all right and each in what its sentence cites. October: 48,200,
+  34,900, 54,400, 27, nine, 15,400 (P1), 10.23% (P2), 1,900 (P8), 41% (P6), 214, and the
+  plan's two, 30-second, one … a week. September: 34,900, 38,200, 28,600, 128, 22, 18,
+  three, 310/25/30/22 (P1). No wrong number appeared to exercise the check.
+- **Client text:** no names, no codes (`reference_checks` empty), no engine, snapshot or
+  "client" for the people in posts. September uses "posts with complete data" and "its
+  numbers are incomplete", which the rule needs.
+- **Highlights (F-025):** each names its measure; both engagement lines are a share
+  ("highest share of people reached who liked, commented on, shared or saved", October
+  with 10.23%). September's retention line says "The most viewers watched … to the end",
+  count wording for a share (true either way here).
+- **Same video (F-024):** October what worked s3: "The two posts about student visa
+  applications used the same question as their opening hook, and the video on YouTube
+  had the highest share of viewers watch to the end." (P1, P6). They are one video
+  (`video_007.MOV`, hook 1). The model's own review note asks to check this. Regressed
+  from run 3.
+- **Headlines:** September "September reached 34,900 people, fewer than in August, and
+  brought 18 enquiries." says reach fell (F-032); the fall in enquiries is only in what
+  happened. October "You reached 48,200 people, up from September, and received 27
+  enquiries." does not use the earlier months, although 48,200 and 27 are the highest of
+  the four (F-027, third time).
+- **Honesty and held-back data:** September states every fall with its number (38,200,
+  22, three) and that reach fell on all four platforms. Video plays are called incomplete
+  in both what happened and the tile; the held-back plays change (45,000) and the
+  engagement rate are not stated. October says plays "can't" be compared with September.
+  No superlatives in either month.
+- **Next month:** October's three items are N1 to N3 with the same meaning ("including
+  one in Nepali"); September's list is empty.
+- **One sentence per item (F-031):** items equal real sentences in every section of both
+  months; `split` is empty, and each sentence cites only its own data (September's top
+  post s2 cites only P1).
+- **October what didn't land:** one item in all three October runs; one real sentence in
+  runs 3 and 5 (F-034). "Your intake-dates carousel reached the fewest people, with
+  1,900, and had the fewest likes, comments, shares and saves." is correct, but LEADERS
+  offers a second quiet spot that goes unused (P3 last on all three retention measures).
+- **Other:** both `metadata.json` are `complete` with `replaces` matching the archived
+  run; `work/draft-report/` is empty; the token estimate was 2% and 2.5% over.
+
+## Fix status (2026-11-05, uncommitted; draft-report re-tested in runs 3 to 6)
 
 | Finding | Status | Change |
 | ------- | ------ | ------ |
@@ -105,6 +273,27 @@ into the terminal, so it is not logged as a finding.
 | F-019 | fixed | `copy.json` `dropped.for_their_references` keeps each dropped hook's and segment's references as written |
 | F-010 (again) | accepted (user, 2026-11-05): the permission prompt before the paid step is the approval and the cost is small; prepare keeps printing `summary` | prepare prints `summary`, the seven ready lines already filled in; the skill shows them word for word instead of composing its own sentence |
 | F-016 | fixed | `different_options` lists each changed option with its saved and new value; the skill says when a saved tone or brief would be dropped |
+| F-020 | confirmed fixed (runs 5, 6): one sentence per item in every section of both months, `split` empty, and each sentence cites only its own data; counts and lengths are per sentence | the prompt asks for one sentence per item; finalize splits any item that still holds several sentences (each keeps the item's references, recorded in `split` with a check) and checks 2 to 4 sentences per paragraph |
+| F-021 | confirmed fixed (runs 3 to 6): no "because" check fired; every September "because … incomplete" and "left out because" line is skipped | the cause check skips a sentence that explains missing data (incomplete, missing, not recorded, not shown, held back, not tracked, left out) |
+| F-022 | confirmed fixed (runs 5, 6): no engine, snapshot, "client" or post code in either month; September's highlights name posts by subject | the prompt bans how the report is made (engine, snapshots, data quality, references, slots) and calling the people in posts "clients"; finalize flags engine, snapshot, data quality and highlight slot |
+| F-023 | partly fixed (runs 5, 6): 5 of 7 September ranking lines say P4 is left out. What worked s1 and s2 cite P4 and do not; both are flagged, correctly (s2 is harmless in fact: P4's reach is recorded and lower). What remains is the model's compliance; the checks work | the highlights header says which posts are incomplete; a sentence about posts that ranks them (most, highest, fewest, more than any ...) while a post is Partial or Stale is flagged unless it says the post is left out |
+| F-024 | regressed (run 5; fixed in run 3): "The two posts about student visa applications used the same question as their opening hook" (P1, P6: one video) is presented as a pattern in what worked; the model's own review note asks to check it | prepare marks a post made from the same video as an earlier one ("same video as P1, posted again on youtube: one video, not two"); the prompt says not to count them as different videos |
+| F-025 | confirmed fixed (runs 5, 6): every highlight names its measure, and both engagement lines are a share. Minor: September's retention line "The most viewers watched … to the end" uses count wording for a share | a highlight line names the measure it rests on, never a wider claim such as "held viewers longest" |
+| F-026 | fixed, still not exercised (runs 3 to 6): every number is in what its sentence cites; no wrong number appeared to test the check | each reference carries its own numbers; a number in the month's data but not in what its sentence cites (or the year, post counts, brand text) is flagged |
+| F-027 | partly fixed (runs 5, 6): both headlines carry reach and enquiries. October still does not use its earlier months (third run), gives 15,400 three times and "the most likes, comments, shares and saves" twice; September's top post s2 gives four counts in one sentence | the headline carries people reached and enquiries when tracked; earlier months are used when given; each number once in the paragraphs |
+| F-010 (draft-report) | not fixed (runs 3, 4): both ready messages were paraphrased again ("October 2026 has 8 posts … about 3,500 input tokens"), not `summary_text` in a fenced block | prepare prints `summary_text`, one block; the skill says to copy it unchanged into a fenced block, nothing in its place |
+| F-028 to F-032 | re-tested in runs 5 and 6; see each row below | see each row below |
+| F-028 | partly fixed (runs 5, 6): every ranking in both drafts agrees with LEADERS, so the data side works. The check side does not catch the run-4 error on its real wording and refs (F-033); the test that "flags" it cites only the wrong post and names one measure | prepare works out LEADERS (most and fewest per measure among posts with complete data) and the prompt ranks posts only from it; finalize checks every ranking of a post (most, highest, more ... than any, fewest ...) against it; the run-4 claim (P2 "reached more people than any other post") is flagged in a replay |
+| F-029 | confirmed fixed (run 6): the 5 lines that cite P4 to leave it out raise nothing, and all 4 checks are real. Each unqualified line still gets two checks (Partial and ranking); `DATA_GAP` lacks "excluding", "except", "apart from", "not counting" (latent) | the Partial and ranking checks read the sentences split from one item together and skip lines that say the data is incomplete or the post is left out ("with complete data" counts); in the run-4 replay only the one unqualified line is flagged |
+| F-030 | fixed, not exercised (runs 5, 6): no superlative check fired and none was due; no "strongest posts" wording appeared | the superlative check fires on comparisons of months (best, strongest ... month; so far; ever; since we started; record), not on "the strongest posts" |
+| F-031 | confirmed fixed (runs 5, 6): items equal real sentences in all 10 sections, `split` empty in both | each sentence's `text` is described as "Exactly one sentence." in the schema |
+| F-032 | confirmed fixed (run 6): "September reached 34,900 people, fewer than in August, and brought 18 enquiries." The fall in enquiries is not in the headline (the check does not require it) | the headline must say when fewer people were reached; finalize flags a headline in such a month without down, fell, fewer, lower ... |
+| F-022 (refs in text) | confirmed fixed (runs 5, 6): no code in either month's text; `reference_checks` is empty in a replay | references (P2, M:reach) are for refs only; finalize flags one written into client text |
+| F-025 (engagement) | confirmed fixed (runs 5, 6): October gives P2's 10.23% as the highest share, and gives P1 the most likes, comments, shares and saves, which it had | highest_engagement is the highest share of the people reached, not the most likes; LEADERS lists the engagement rate apart from the counts |
+| F-033 | fixed (second replay, 2026-11-06): run 4's sentence (refs P2, P4, P1) gets "…the first is P2 on engagement rate; P1 on people reached: make sure that is the post it puts first.", and run 3's misleading engagement highlight gets "puts P2 first on comments, but P1 is first" (real). Over runs 3 to 6 the order check gives 4 "make sure" prompts, 2 real (run 4 s1, run 3 s1) and 2 on correct lines (F-035), plus 1 hard check, real. Latent: run 4's ranking against P4 ("more than any other post" on likes …) is no longer flagged, because "with complete data" later in the same sentence exempts the whole line | `measures_in` returns every measure named, with the engagement wording taken out before counts; `order_checks` adds a check naming the leader when a line cites it with other complete posts; MOST/FEWEST know widest, topped, came first, led, ahead of, came last, trailed |
+| F-034 | open (October runs 3 and 5) | none yet |
+| F-035 | partly fixed (second replay, 2026-11-06): the two false "first on engagement rate" checks on October's retention lines are gone, and no retention line is read as engagement in runs 3 to 6. The shared-leader prompt still fires on 2 correct lines (October what worked s3, September what worked s1) | ENGAGEMENT matches only "engag…" and "liked, commented (on), shared or/and saved"; "share of (the) people/viewers …" is a separate SHARE pattern removed only before counts are matched |
+| F-010 (draft-report) | accepted (user, 2026-11-05), as for generate-copy | the permission prompt before the paid step is the approval; prepare still prints `summary_text` |
 
 ## Findings
 
@@ -249,6 +438,22 @@ into the terminal, so it is not logged as a finding.
   user had no chance to notice before paying. Raised to high because it happened in
   two runs out of two.
 - **Seen again:** run 6 (force). The ready message gave the model, effort and replaced time, but no inputs, token estimate or warnings. That makes all 3 paid runs.
+- **Seen again: draft-report (both months):** the session paraphrased the ready message
+  as "Prepare found 8 posts … with cost and org details noted". `/draft-report` SKILL.md
+  step 1 asks for every `summary` line word for word, as a list. For September, the
+  lines left out were the ones that mattered: "Incomplete data: P4 (tiktok, Partial)",
+  "Next-month plan: none (the list stays empty)" and "Earlier months: none". The
+  generate-copy exception the user accepted does not cover this skill, which kept the
+  word-for-word rule. Either enforce the rule (prepare's output already has `summary`
+  ready to quote), or accept the paraphrase here too and change the skill to match.
+- **Seen again: draft-report runs 3 and 4 (after the skill change):** both ready
+  messages were paraphrased again, for example "October 2026 has 8 posts, 4 … all with
+  complete data … about 3,500 input tokens". The skill now says to copy `summary_text`
+  unchanged into a fenced text block and put nothing in its place, and the session did
+  neither. Wording the rule more strongly in SKILL.md has not changed the behaviour in
+  4 runs out of 4. What is left is to accept the paraphrase, as for generate-copy, or to
+  show `summary_text` without relying on the session, for example by having prepare
+  print only that block for the user.
 
 ### F-011: Organisation name mistranscribed, repeated in all of the copy (high, confirmed)
 
@@ -375,3 +580,441 @@ into the terminal, so it is not logged as a finding.
 
 - **Observed:** Only counts of dropped hooks and segments were saved, and the job folder
   holding the answer is deleted, so a drop like F-017 cannot be diagnosed.
+
+### F-020: Paragraphs come back as one item, so sentence citations and length checks do nothing (high, draft-report, both months)
+
+- **Observed:**
+  - The model put several sentences into one `SENTENCE` item. In October every
+    paragraph and the top post is one item holding 2 or 3 sentences. In September,
+    what_happened is 2 items holding 3 sentences, and what_worked is 2 items holding 4.
+  - October's what_worked item has 3 sentences and cites P1, P2 and P6 together, so
+    nothing shows which sentence rests on which post. `report.md` still says "Every
+    sentence lists the data it rests on".
+  - `length_checks` counts items, not sentences, so the 4-sentence limit for paragraphs
+    and the 2-sentence limit for the top post never apply.
+  - `checks` point to "What happened, sentence 1" when that is the whole paragraph.
+  - The `sentences` count the skill reports is really the item count (the session's
+    "1 each").
+- **Evidence:** in `output/draft-report/2026-10-d6af7a55/report.json`,
+  `summary.what_happened[0].text` holds three sentences ("…13,300 more than in
+  September. Your videos were played … You gained 214 …") under 4 refs. In draft.py,
+  `SENTENCE = {text, refs}` has no description, and `INSTRUCTIONS` asks for references
+  "for every sentence", but never says one sentence per item.
+- **Why it matters:** the guarantee that the draft can be traced sentence by sentence,
+  and the paragraph-length rule, are both lost without any sign. A paragraph of 10
+  sentences would also pass.
+- **Fix direction:** say in the instructions (and a schema `description`) that there is
+  one sentence per array item. In finalize, split each item's text at sentence ends,
+  then count and check per sentence. Add a check (or split the item) when an item holds
+  more than one sentence. Name parts in checks by their real sentence.
+
+### F-021: "because" check fires on the explanation of held-back data (low, draft-report, both months)
+
+- **Observed:** the only check in October, and the first one in September, is a false
+  positive:
+  - October: "Your videos were played 54,400 times; we can't compare that with
+    September because its TikTok play data was incomplete."
+  - September: "Your videos were played 28,600 times, but this month's number is
+    incomplete because one TikTok post's plays are missing."
+
+  Neither sentence gives a cause for how the posts performed. Each says why a number is
+  incomplete or held back, which the instructions ask for ("say its numbers are
+  incomplete") and the input footnote states.
+- **Why it matters:** when a clean draft's only check is a false alarm, strategists
+  learn to skip checks.
+- **Fix direction:** let `CAUSAL` ignore a clause that mentions incomplete, missing,
+  not shown, held back or a Partial or Stale snapshot. Or give the model a fixed
+  wording ("…; the change from September is not shown, as its TikTok data is
+  incomplete") and tell it not to write "because" at all.
+
+### F-022: Internal and marketing terms reach the client text without a check (medium, draft-report, mostly October)
+
+- **Observed:**
+  - October what_worked: "was the engine's highest-engagement pick". The client has
+    never heard of the report engine, and "engagement" is the jargon the instructions
+    replace with "liked, commented on, shared or saved".
+  - October what_didn't_land: "the lowest reach among this month's complete post
+    snapshots". All 8 October posts are Full, so "complete" suggests that some were not,
+    and "snapshots" is a term from the data model.
+  - September: "complete viewing data", the headline's "September reach was …", and the
+    top post's "a client's student visa grant". In this report "you" is the client, so a
+    reader cannot tell whose client is meant.
+- **Evidence:** in finalize.py, `JARGON` covers impressions, CTR, CPC, KPI, conversion,
+  funnel and video completions. It has no entry for engagement (except as part of
+  "engagement rate", which is not in the regex), snapshot, engine or pick.
+- **Fix direction:** add engagement, snapshot(s), engine and data quality to `JARGON`.
+  In the instructions, never name the report engine or snapshots, and never qualify a
+  ranking as "complete" when every post is Full. Call the organisation's own customers
+  "a student" or "one of your students", not "a client".
+- **Seen again: September run 4 (post codes):** all three highlights write the codes
+  into the client text: "P1 reached more people than any other post with complete data;
+  P4 is left out because its data is incomplete.", "P2 had the most likes, comments,
+  shares or saves…" and "P2 had the highest share of viewers watching to the end…". The
+  client has never seen P1 to P6. The instructions ban "references", but `INTERNAL`
+  does not match a code. October names its posts by subject ("the student-visa advice
+  video") and is clean.
+  - **Fix direction:** flag any `REF_PATTERN` match (P3, N2, M:reach, PL:tiktok) in a
+    line the client reads. Tell the model to name a post by its subject or platform and
+    never by its code.
+
+### F-023: A ranking that includes a Partial post is not flagged when that post is not cited (medium, draft-report, September)
+
+- **Observed:** the highest-engagement highlight says "The visitor-visa advice video
+  received the most likes, comments, shares and saves among your posts." P4's shares
+  and saves are not recorded, so "most shares and saves among your posts" cannot be
+  known. what_worked has the right qualifier ("among the posts with complete data"),
+  but the highlight leaves it out. No check fired, because the highlight cites only P2.
+- **Evidence:** in `2026-09.json`, `posts[3].snapshot.shares_count` and `saves_count`
+  are null. `partial_checks` looks only at the refs a line cites.
+- **Why it matters:** this breaks the agreed rule that Partial posts are never ranked
+  or compared on, and it is the case the rule exists for.
+- **Fix direction:** when any post is Partial or Stale, flag ranking words (most,
+  highest, lowest, longest, best, top) in a line that has no qualifier such as
+  "complete data". Or treat such a line as resting on every post with incomplete data.
+  Also tell the model to repeat the qualifier in highlights.
+
+### F-024: The same video posted twice is described as "two videos" sharing a hook (low, draft-report, October)
+
+- **Observed:** what_worked ends: "The two videos about financial documents used the
+  same question as their opening hook." P1 (Instagram) and P6 (YouTube) are one video,
+  `video_007.MOV` with `hook_used` 1, posted twice. Presented as a pattern, it is only
+  true because they are the same video, and it tells the reader nothing about which
+  hooks hold viewers. The hook itself is never quoted. September does this well: "Its
+  opening asked whether viewers were planning a visitor visa application for their
+  parents."
+- **Evidence:** in `2026-10.json`, `posts[0]` and `posts[5]` share `source_file` and
+  `hook_used`. `build_context` never says that two posts come from the same video.
+- **Fix direction:** in prepare, mark a post made from the same video as an earlier one
+  ("same video as P1"). Instruct that a hook pattern needs posts from different videos,
+  and that the observation should quote or paraphrase the hook.
+- **Seen again: October run 5 (regressed after run 3):** what worked s3: "The two posts
+  about student visa applications used the same question as their opening hook, and the
+  video on YouTube had the highest share of viewers watch to the end." (P1, P6). It says
+  "posts", not "videos", so the "same video as" rule is kept in the letter, but the
+  observation is still only true because they are one video, and the hook is not quoted.
+  Read after s1 ("Your educational student-visa video reached the most people"), "the
+  video on YouTube" reads as a second video. The model's own review note asks to check
+  that they are "described as one video shared on two platforms", so it knew.
+  - **Fix direction:** as above: the instructions say a hook pattern needs posts from
+    different videos, which they do not yet. Finalize could flag a sentence citing two
+    posts with the same source file together with "same", "both" or "two".
+
+### F-025: Best-retention line pairs "longest" with a measure where another post led (low, draft-report, October)
+
+- **Observed:** "The YouTube video … held viewers longest among the videos: 49% were
+  still watching after 10 seconds and 41% watched to the end." P6 leads only on watching
+  to the end (41% against P2's 38.2% and P1's 34.5%). After 10 seconds P1 had 52% against
+  P6's 49%, and after 3 seconds 71.4% against 66.2%. Read together, the sentence
+  suggests P6 led at 10 seconds as well.
+- **Evidence:** the retention figures of P1, P2 and P6 in `2026-10.json`. The material
+  does not say which measure the report engine ranked best retention on.
+- **Fix direction:** have prepare send the measure the highlight was ranked on
+  ("best_retention: P6, by share watching to the end"), and instruct the model to give
+  that measure first or only.
+- **Seen again: October run 3 (engagement):** "Highest result for people liking,
+  commenting on, sharing or saving: the Nepali visitor-visa video." and in what worked
+  s1 "the Nepali visitor-visa video had the strongest result for people liking,
+  commenting on, sharing or saving". P2 leads only on engagement rate (10.23% against
+  P1's 9.35%). P1 had more of every count: 820/96/214/310 likes, comments, shares and
+  saves, against P2's 700/88/120/95. A reader takes "highest result" to mean the most
+  likes, comments, shares and saves, which is false. The instructions ban "engagement
+  rate" and give only "liked, commented on, shared or saved", so the model has no
+  plain words for a rate. September is not affected, because there P2 led on both
+  counts and rate.
+  - **Fix direction:** as above. Prepare also says that highest_engagement is ranked
+    on the share of people reached who liked, commented on, shared or saved. The
+    instructions give the plain wording for it ("for the number of people it reached,
+    the most people liked, commented on, shared or saved it").
+
+### F-026: The number check matches against every number in the month, not the cited data (low, latent, draft-report)
+
+- **Observed:** `allowed_numbers` is one flat list holding every count, percentage,
+  difference, year, plan figure and footnote figure, and `unmatched` checks a line
+  against all of it. Every number in these two drafts is right, but some pass only by
+  chance:
+  - "after 10 seconds" passes because P4 had 10 comments, not because 10 s is a data
+    value;
+  - "two educational videos" passes on P8's 2 comments.
+
+  A wrong attribution would also pass. "1,900 people" is both October's P8 reach and
+  LinkedIn's September reach, and 214 is both new followers and P1's shares, so a line
+  saying "214 people shared it" would pass.
+- **Why it matters:** the check reports success on numbers it has not really matched,
+  so `complete` promises more than it checks.
+- **Fix direction:** check each number first against the values of the refs that line
+  cites. Report a number found only elsewhere in the month as a softer "matches other
+  data than it cites" check. Allow the retention points (3 s, 10 s) and counts of cited
+  posts explicitly.
+
+### F-027: Flatter and more number-heavy than the screen-7 example (low, draft-report, both months)
+
+- **Observed:**
+  - The headlines are "Your posts reached 48,200 people, up 13,300 from September." and
+    "September reach was 34,900 people, down 3,300 from August.". Neither gives
+    enquiries, although the target is "48.2K reached, 27 enquiries".
+  - October repeats raw counts: P2's four counts appear in what_worked and again in
+    its highlight, and P1's four counts in the top post.
+  - October has earlier months (July 26,100 and 12, August 38,200 and 21, September
+    34,900 and 18), and its 48,200 reach and 27 enquiries are the highest of all four.
+    The draft does not use them, so "your highest reach since July" is missed.
+  - "you" and "we" appear, but mostly as data readouts, not warm sentences.
+- **Fix direction:** in the instructions:
+  - put reach and enquiries in the headline, using display forms;
+  - use at most two numbers per sentence;
+  - do not repeat a paragraph's counts in highlights or the top post;
+  - when earlier months are given, use them for one comparison where they support it.
+
+  No code change is needed.
+- **Seen again: runs 3 and 4 (partly fixed):** both headlines now carry reach and
+  enquiries ("October reached 48,200 people and brought 27 enquiries", with no full
+  stop). September repeats no counts. October is given earlier months again (July
+  26,100/12, August 38,200/21, September 34,900/18), and 48,200 and 27 are the highest
+  of the four, but no line uses them, although the instructions now say to. 15,400
+  appears in both the top post and the reach highlight. The text still reads as data,
+  for example the top post's "was liked, commented on, shared or saved", which says
+  nothing.
+- **Seen again: runs 5 and 6:** October's headline "You reached 48,200 people, up from
+  September, and received 27 enquiries." and every other line still ignore the earlier
+  months, the third October run in a row. The instruction says "use them where they add
+  something", which leaves it optional. 15,400 now appears three times (what worked s1,
+  top post s2, reach highlight), and "the most likes, comments, shares and saves" twice.
+  September's top post s2 gives four counts in one sentence ("liked it 310 times,
+  commented 25 times, shared it 30 times and saved it 22 times"); the "at most two
+  numbers per sentence" direction was not adopted.
+  - **Fix direction:** say "when EARLIER MONTHS show this month's reach or enquiries is
+    the highest or lowest of them, the headline or what happened says so"; and "the top
+    post and highlights do not repeat a number or ranking the paragraphs give".
+
+### F-028: A ranking is given to the wrong post, and no check can catch it (high, draft-report, September run 4)
+
+- **Observed:** what worked sentence 1 says the visitor-visa video (P2) "reached more
+  people than any other post with complete data". P2 reached 8,700. P1 reached 9,900
+  and is Full. The same report contradicts itself: the top post says P1 "reached 9,900
+  people" as the highest-reach post, and so does the reach highlight. Run 2 had this
+  right ("The highest-reach post was also an Instagram video, about a student visa
+  grant").
+- **Evidence:** `2026-09.json` `posts[0].snapshot.reach_count` 9900 and
+  `posts[1].snapshot.reach_count` 8700; `highlights.highest_reach` is ci-2609-01. The
+  sentence cites P2, P4 and P1, so it cites the post that really led. The sentence has
+  no number, so `number_checks` and `cited_number_checks` (F-026) do not look at it.
+  The three checks that do fire on it (F-030, and the Partial and ranking checks) are
+  about other things, and 10 false alarms surround them (F-029).
+- **Why it matters:** this is a false statement in the client's report about which
+  post did best. A strategist who trusts the checks has nothing pointing to it.
+- **Fix direction:**
+  - Prepare sends each post's rank on reach, engagement and retention among the
+    complete posts ("P1: 1st reach; P2: 2nd reach, 1st engagement…").
+  - Finalize checks a ranking word together with a measure ("reached the most / more
+    than any", "most liked …", "watched to the end") against the leader of that
+    measure. A sentence that gives the top spot to a post other than the leader is
+    flagged by name.
+  - The instructions ask for one claim per sentence, so a ranking is not attached to a
+    second post as a side clause.
+
+### F-029: Partial checks fire on lines that leave the post out, and split sentences inherit them, so false alarms bury the real one (medium, draft-report, September run 4)
+
+- **Observed:** September has 15 checks, and 10 of them are false alarms. 8 of the 9
+  "rests on P4, whose data is Partial" checks are on lines that already say P4 is
+  incomplete and left out, or that inherited P4 from the item they were split from. One
+  of the 2 ranking checks ("fewest") is on a sentence that begins "Among posts with
+  complete data". Only what worked s1 really ranks against P4. The table under "Re-test
+  (runs 3 and 4)" lists each check.
+- **Evidence:** in `finalize.py`:
+  - `partial_checks` fires on any line that cites a Partial or Stale post. It has no
+    `DATA_GAP` exemption, although `wording_checks` and `ranking_checks` have one.
+  - `clean_sentences` gives every split sentence all of the item's `evidence`. The
+    model cites P4 on an item so that its second sentence can leave P4 out, and the
+    first sentence then "rests on P4" too (what worked, didn't land, top post).
+  - `ranking_checks` looks at each split sentence alone, so the "left out" clause in
+    s2 does not cover the ranking in s1. "with complete data" is not in `DATA_GAP`.
+  - The highlights cite P4 only to say that it is excluded, as the instructions ask.
+- **Why it matters:** the instructions now make the model cite and exclude Partial
+  posts, and every time it does so correctly, the checks fire. A strategist facing 15
+  checks in which 2 of 3 are wrong will stop reading them, and the false claim in F-028
+  sits among them.
+- **Fix direction:**
+  - Skip `partial_checks` for a line that matches `DATA_GAP`, as the other two checks
+    do.
+  - For split items, run the Partial and ranking checks on the item's whole text
+    before splitting. Or keep a Partial ref only on the sentences that mention that
+    post (its platform, or "incomplete").
+  - Add "(with|among) (the )?(posts|videos) with complete data" to the ranking
+    exemption.
+  - Or give the model a separate `left_out` field for posts a line excludes, so that
+    `refs` holds only the data the line rests on.
+
+### F-030: The superlative check fires on a ranking within the month ("among the strongest posts") (low, draft-report, September run 4)
+
+- **Observed:** "What worked, sentence 1 compares beyond last month ("strongest")" is
+  raised on "…was among the strongest posts…". This compares posts within September,
+  not September with earlier months, so it is not the claim `SUPERLATIVE` exists for.
+  The instructions forbid calling the month "the best, strongest or worst" and do not
+  forbid ranking posts.
+- **Evidence:** `SUPERLATIVE` in `finalize.py` matches "strongest", "weakest" and
+  "worst" alone. `RANKING` already handles rankings of posts.
+- **Why it matters:** this is one more false alarm on the same sentence as F-028.
+  Without earlier months, any "your strongest post" sets it off.
+- **Fix direction:** match strongest, weakest and worst only next to a period word
+  ("strongest month", "worst September", "the strongest yet"), and leave rankings of
+  posts to `RANKING`.
+
+### F-031: The model ignores "one sentence per item" in some runs (low, draft-report, September run 4)
+
+- **Observed:** items against real sentences (headline, happened, worked, didn't land,
+  top post):
+  - October: 1/1, 3/3, 2/2, 1/1, 2/2. The rule is followed.
+  - September: 1/1, 3/3, 1/2, 1/2, 1/2. Three sections each came back as one item
+    holding two sentences.
+
+  Each merged item cites the posts of both sentences: what worked P2, P4 and P1;
+  didn't land P5 and P4; top post P1 and P4.
+- **Evidence:** `report.json` `split`. `SENTENCE` in `draft.py` still has no schema
+  `description`. The rule is one clause in `INSTRUCTIONS`, and the effort is low.
+- **Why it matters:** the split keeps the counts and lengths right (F-020). It cannot
+  restore which data each sentence rests on, and that is the cause of most of F-029.
+- **Fix direction:** add `"description": "exactly one sentence"` to `SENTENCE.text`
+  and "refs: only the data this one sentence rests on" to `refs`. Keep the split as the
+  safety net, together with the F-029 change to how a split item's references are
+  checked.
+
+### F-032: September's headline no longer says the month fell (low, draft-report, September run 4)
+
+- **Observed:** run 2's headline was "September reach was 34,900 people, down 3,300 from
+  August." Run 4's is "September reached 34.9K people and brought 18 enquiries." Reach
+  (-8.64%) and enquiries (-14.29%) both fell. The report card now reads as neutral or
+  good, and the fall appears only in what happened. That paragraph states it plainly,
+  so the report as a whole is honest.
+- **Evidence:** the headline in the instructions is "the month's main takeaway with
+  people reached and enquiries". The honesty rule names only what_happened.
+- **Why it matters:** the headline is the line the client is most likely to read. A
+  month with lower reach and fewer enquiries that does not say so in the headline
+  comes close to the "flattering comparison" the honesty rule forbids.
+- **Fix direction:** in the headline instruction, give the direction of change against
+  last month for reach and enquiries ("34.9K reached and 18 enquiries, both down on
+  August"), still within 20 words.
+
+### F-033: The ranking order check misses the run-4 error on its real wording and refs (high, latent, draft-report)
+
+- **Observed:** `order_checks` was replayed (free, in a scratch script) on the run-4
+  sentence that F-028 is about, with the refs it really had (P2, P4, P1) and the
+  September LEADERS: no check. Its test
+  (`test_a_ranking_given_to_the_wrong_post_is_flagged`) passes only because the sentence
+  there names one measure and cites only the wrong post. Three gaps:
+  - `measures_in` returns only the engagement rate when a line has engagement wording
+    ("liked, commented"), so the reach claim in the same sentence ("reached more people
+    than any other post") is never checked. Run 6's what worked s1 (engagement and "the
+    most viewers watched it to the end") is checked on engagement only; it is right, so
+    nothing was missed this time.
+  - A line passes when any cited Full post is the leader (`posts & set(lead[...])`). Run
+    4 cited P1, the real leader, next to P2, which it ranked first. Replay: "It reached
+    more people than any other post with complete data." flags P2 alone, but not P2 with
+    P1.
+  - `MOST` and `FEWEST` do not know "widest audience", "topped", "came first", "led the
+    month" or "no post was seen by more people"; none of these is checked.
+- **Evidence:** `processors/draft-report/finalize.py` `measures_in` (returns early on
+  `ENGAGEMENT`) and `order_checks`; `history/20261105-115326/report.json` what worked
+  s1, evidence P2, P4, P1.
+- **Why it matters:** a ranking given to the wrong post is the one error type that has
+  no number for the number checks to catch, and it reached a draft in run 4. The fix
+  status said the run-4 claim "is flagged in a replay", but on the real data it is not.
+  Runs 5 and 6 had no wrong ranking, so they pass because of LEADERS, not because of
+  the check.
+- **Fix direction:**
+  - `measures_in` returns every measure a line names (engagement, retention and counts
+    together), without counting "liked, commented on, shared or saved" in the
+    engagement wording as the likes, comments, shares and saves counts.
+  - When a ranking line cites the leader and other Full posts, flag it ("cites P1 and
+    P2; check which post it puts first"), or have the model return each ranking in a
+    structured field (post, measure, most or fewest) and check that against LEADERS.
+  - Add led, topped, came first, widest and "no other post … more" to the ranking words.
+  - Add a test with the run-4 sentence and refs P2, P4, P1.
+
+- **Re-test of the fix (replay, 2026-11-06):** the current `order_checks`,
+  `ranking_checks` and `partial_checks` were replayed (free; scratch script) on runs 3
+  to 6.
+  - Run 4: the F-028 sentence now gets "What worked, sentence 1 ranks posts and cites
+    P1, P2; among posts with complete data the first is P2 on engagement rate; P1 on
+    people reached: make sure that is the post it puts first." This is a prompt to check,
+    not a verdict, but it names P1 as the reach leader, so a strategist reading it finds
+    the error. `measures_in` now gives engagement rate and reach for that line.
+  - Run 3: the engagement highlight ("Highest result for people liking, commenting on,
+    sharing or saving") now gets "puts P2 first on comments, but P1 is first", which is
+    real (F-025).
+  - Runs 5 and 6: September's checks are the same 4 real ones plus a shared-leader check
+    on what worked s1; October gets 3 new checks, all false alarms (F-035).
+  - Status: partly fixed. The error is caught now, but at the cost of the false alarms
+    in F-035.
+  - **Second replay (after the F-035 fix):** per run, the order and ranking checks:
+    - Run 4: order "make sure" on what worked s1 (names P1 for reach): real, the F-028
+      error. No ranking check: "with complete data" in the reach clause now exempts the
+      whole line, so its unqualified "more than any other post" on likes, comments,
+      shares or saves (P4 has no shares or saves) goes unflagged (latent). A Partial
+      check on the top post s1 is an artefact of the replay: run 4's file predates the
+      `item` field, so its split sentences could not be grouped.
+    - Run 6: order "make sure" on what worked s1: false (the line puts P2 first,
+      correctly; P1 is cited for "Instagram videos stood out"). Ranking on s1 and s2,
+      and Partial on s1 and s2: real, as in the run-6 review.
+    - Run 5: order "make sure" on what worked s3: false (it puts P6 first, correctly).
+      The two engagement-rate checks are gone.
+    - Run 3: order "make sure" on what worked s1 (P1 first on comments) and "the highest
+      engagement highlight puts P2 first on comments, but P1 is first": both real (the
+      F-025 wording "strongest result for people liking, commenting on…").
+    - Status: fixed. The 2 prompts on correct lines are the remaining noise (F-035).
+
+### F-034: October's "What didn't land" comes back as one sentence (low, draft-report, October runs 3 and 5)
+
+- **Observed:** all three October runs give what didn't land as one item; run 1 packed
+  two sentences into it, runs 3 and 5 give one sentence, and the length check fires
+  rightly each time. Run 5: "Your intake-dates carousel reached the fewest people, with
+  1,900, and had the fewest likes, comments, shares and saves." It is correct (P8 is last
+  on reach and every count), but LEADERS also gives a second quiet spot that goes unused:
+  P3, the reposted Instagram promo, is last on all three retention measures (48%,
+  30.1%, 18% to the end). September, where things fell, gets 2 sentences.
+- **Evidence:** `draft.py` `INSTRUCTIONS` gives "2 to 4 sentences each" once for all
+  three paragraphs, then gives what_did_not_land a single job: "the weakest result or
+  quietest spot". In a month where every total and platform rose, the model writes the
+  one weakest post and stops.
+- **Why it matters:** the strategist has to write the paragraph's second sentence every
+  October-like month; screen 7 shows two.
+- **Fix direction:** in the instruction for what_did_not_land, ask for 2 to 4 sentences:
+  the weakest result, then a second quiet spot from LEADERS (another measure or post);
+  when nothing fell against last month, one of them may say so. Keep the length check.
+
+### F-035: The F-033 fix reads "share of viewers … to the end" as engagement and flags correct retention lines (medium, draft-report, October run 5 by replay)
+
+- **Observed:** with the current `finalize.py`, October run 5 (which had one correct
+  check) would get 3 more, and none of them is real:
+  - "What worked, sentence 3 puts P1, P6 first on engagement rate, but P2 is first among
+    posts with complete data; check it." The line ("…the video on YouTube had the
+    highest share of viewers watch to the end") ranks on watching to the end, where P6
+    does lead (41%).
+  - "The best retention highlight puts P6 first on engagement rate, but P2 is first…".
+    This flags as wrong the highlight line "Your student-visa video on YouTube had the
+    highest share of viewers watch to the end: 41%", which is right and worded as the
+    instructions ask.
+  - "What worked, sentence 3 ranks posts and cites P1, P6; … the first is P6 on watched
+    to the end: make sure that is the post it puts first." The line does put P6 first.
+    September run 6 gets the same shared-leader check on what worked s1, which puts P2
+    first, as it should; P1 is cited only for the opening "Your English-language
+    Instagram videos stood out".
+- **Evidence:** `ENGAGEMENT` now matches `share of (the )?(people|viewers)`, so
+  `measures_in` adds `true_engagement_rate` to any retention line written as a share of
+  viewers, and P2, not P6, leads the engagement rate. In September the same mistake hides
+  by luck: P2 leads both the engagement rate and watching to the end. The shared-leader
+  check fires on every correct line that also cites a supporting post.
+- **Why it matters:** the first two say a correct line is wrong ("check it"), in a draft
+  whose wording follows the instructions. They are the same kind of false alarm F-029
+  removed, and they would sit next to the one real check.
+- **Fix direction:**
+  - Match `share of viewers` as engagement only when "who liked, commented …" follows,
+    or look for the retention wording first and leave such a line out of engagement.
+  - Add tests: October's best-retention highlight and what worked s3 raise no order
+    check.
+  - For the shared-leader check, either accept it as a prompt (state in the skill that
+    it asks for a check, not a fix), or ask the model to cite only the ranked post on a
+    line that ranks, and put the context post in a separate sentence.
+- **Second replay (after the fix):** the engagement-rate false alarms are gone in runs 3
+  to 6; October's best-retention highlight and what worked s3 are read as watching to
+  the end only. What remains is the shared-leader "make sure" prompt on 2 correct lines
+  (October what worked s3, September what worked s1). Status: partly fixed; the fix
+  direction for the prompt stands.

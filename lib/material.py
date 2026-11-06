@@ -1,6 +1,7 @@
 """What earlier processors found for one file, as text for a model: the speech from
 transcribe, the visual tags and clearly read on-screen text from tag-visuals. Shared by
-the processors that write from those results (tag-topics, generate-copy).
+the processors that write from those results (tag-topics, generate-copy); draft-report
+reads earlier results with read_result and input_record.
 
 The text never holds the file name, which can hold a person's name. Each line carries a
 reference (S1 for a sentence, V:<label> for a visual tag, T1 for an on-screen text) that

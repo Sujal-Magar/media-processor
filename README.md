@@ -7,10 +7,11 @@ the same layout.
 
 | Processor     | Skill            | Input                                  | Output                                                                                                                                                             | Provider                                        |
 | ------------- | ---------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| transcribe    | `/transcribe`    | audio or video                         | transcript (`.md`, `.json`)                                                                                                                                        | ElevenLabs speech-to-text (official MCP server) |
+| transcribe    | `/transcribe`    | audio or video                         | transcript (`.md`, `.json`) and subtitles (`.vtt`, `.srt`, times estimated within each part)                                                                       | ElevenLabs speech-to-text (official MCP server) |
 | tag-visuals   | `/tag-visuals`   | video or photo                         | free-form visual tags (reusing the folder's existing tags) and on-screen text, with time ranges (`.md`, `.json`), frame thumbnails                                 | OpenAI vision model (official API)              |
 | tag-topics    | `/tag-topics`    | a file already transcribed or tagged   | what it is about: type, topics and named things (never people), each with its evidence, and a short summary (`.md`, `.json`)                                       | OpenAI text model (official API)                |
 | generate-copy | `/generate-copy` | a video already transcribed and tagged | draft copy: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtag clusters, an optional translation (`.md`, `.json`) | OpenAI text model (official API)                |
+| draft-report  | `/draft-report`  | one month's numbers (`.json`)          | draft monthly report narrative: a headline, three short paragraphs, the top post, a line per highlight and tile, next month's plan in the client's words (`.md`, `.json`) | OpenAI text model (official API)                |
 
 | Pipeline      | Skill            | Runs                                                                        |
 | ------------- | ---------------- | --------------------------------------------------------------------------- |
@@ -50,6 +51,18 @@ result is a draft for someone to approve. Nothing is published. The organisation
 name comes from `organisation.json`, because speech-to-text can mishear it (a name heard
 as a better-known place).
 
+`/draft-report` writes the narrative of a client's monthly results report (Pulse C17b)
+from that month's numbers: totals with the change from last month, each platform, each
+post's snapshot, the Top 3 highlights and, if written, the strategist's plan for next
+month. Until Pulse's analytics exist, the numbers come from a hand-written file
+(`fixtures/report-input.example.json` shows the shape; mock months go in
+`input/reports/`). For posts made from a video in `input/`, it also reads the topic tags
+and the hook used. Every sentence cites the data it rests on, and every number in it must
+be one the month's data holds (48,200 may read 48.2K, 38.11% may read 38%): a number
+that matches nothing makes the draft incomplete. It describes what happened, not why;
+the next-month list only rewords the strategist's plan. The draft is for the strategist
+to review, edit and sign off; nothing is sent.
+
 ## Setup (once)
 
 ```fish
@@ -61,7 +74,8 @@ claude                        # or open this folder in the Claude Desktop app's 
 ```
 
 In Claude Code, run `/setup`. It checks ffmpeg, uvx, both keys, the ElevenLabs MCP
-server and whether your OpenAI key can use the vision model, and lists the ElevenLabs
+server and whether your OpenAI key can use the models (vision, and the topic, copy and
+report models if you set them apart), and lists the ElevenLabs
 key's permissions. All of it is free. The first start downloads the ElevenLabs server
 with `uvx` (about a minute).
 
@@ -75,6 +89,7 @@ Put a file in `input/`, then in Claude Code:
 /transcribe input/voice-note.m4a speakers
 /tag-visuals input/photo.jpg
 /tag-visuals input/interview.mov every 2 seconds high detail
+/draft-report input/reports/2026-10.json
 ```
 
 `/process-video` accepts the words of both processors:
@@ -104,6 +119,9 @@ Results:
 output/transcribe/interview-1a2b3c4d/
 ├── transcript.md     readable transcript
 ├── transcript.json   text, parts with start/end times, options, model, completeness
+├── transcript.vtt    subtitles (WebVTT): short cues of at most two lines, speaker
+│                     labels as voices; times estimated within each part
+├── transcript.srt    the same cues as SRT, without speaker labels
 ├── metadata.json     source file, audio tracks, loudness, request plan, status
 └── history/<time>/   earlier results that `force` replaced (only after a `force`)
 
@@ -136,6 +154,16 @@ output/generate-copy/interview-1a2b3c4d/
 │                     dropped, review status (`draft`), tokens used
 ├── metadata.json     inputs, model, request plan, status
 └── history/<time>/   earlier results that `force` replaced (only after a `force`)
+
+output/draft-report/2026-10-1a2b3c4d/       (named after the month's input file)
+├── report.md         the report as the client page lays it out (headline, the three
+│                     paragraphs, the numbers with a line under each, the top post,
+│                     highlights, next month), what needs checking, and the data each
+│                     part rests on
+├── report.json       the same, sentence by sentence with its evidence, plus what was
+│                     dropped, review status (`draft`), tokens used
+├── metadata.json     month, inputs, model, request plan, status
+└── history/<time>/   earlier results that `force` replaced (only after a `force`)
 ```
 
 You can then ask Claude things like "summarize the transcript" or "in which scenes does
@@ -144,7 +172,7 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
 ## Safety and cost
 
 - **Paid steps always ask.** `.claude/settings.json` puts ElevenLabs `speech_to_text`
-  and the OpenAI scripts (visual tags, topics and copy) under `ask`, and blocks every
+  and the OpenAI scripts (visual tags, topics, copy and reports) under `ask`, and blocks every
   other paid ElevenLabs tool (voice cloning, text-to-speech, music, phone calls, ...).
 - **No double charges by accident.** The same source file is not processed twice unless
   you say `force`, and then the previous result is kept in `history/<time>/` (named after
@@ -156,7 +184,9 @@ a laptop appear?". Claude asks permission before reading anything in `output/`.
   audio); OpenAI receives only the sampled frames (at most 768 px), plus, for text too
   small to read, a full-resolution crop around that text. For topics and copy, OpenAI
   receives the transcript text, the visual tags and the clearly read on-screen text
-  (copy also the topic tags and your brief), never a file. Neither sees your originals or other files.
+  (copy also the topic tags and your brief), never a file. For reports, OpenAI receives
+  the month's numbers and, for posts made from a video, its topic tags and hook. Neither
+  sees your originals or other files.
 - **ElevenLabs keeps the audio.** The pinned MCP server (`elevenlabs-mcp` 0.12.2) always
   sends requests with logging on, so ElevenLabs stores the audio and transcript under its
   normal retention. The tool can't turn this off; zero retention would need another route
@@ -184,6 +214,8 @@ media-processor/
 ├── lib/openai_api.py              OpenAI API client (standard library only)
 ├── lib/tags.py                    tag wording (lowercase, hyphens) and tag libraries
 ├── lib/material.py                earlier results as text for a model (topics, copy)
+├── lib/numbers.py                 numbers in model text checked against the data given
+├── fixtures/                      example inputs (report-input.example.json)
 ├── lib/organisation.py            the organisation's own name and hashtags (organisation.json)
 ├── organisation.json              your organisation's details (not in git; see the example)
 ├── servers/<provider>.py          starts a provider's MCP server (.mcp.json)
@@ -217,12 +249,16 @@ python3 scripts/check_setup.py
 python3 processors/transcribe/prepare.py input/interview.mov --part-seconds 120 --diarize
 # the paid transcription step needs the MCP tool; inside Claude Code: /transcribe ...
 python3 processors/transcribe/finalize.py work/transcribe/<job-folder>
+python3 processors/transcribe/subtitles.py --all    # subtitles for transcripts made before
 
 python3 processors/tag-visuals/prepare.py input/interview.mov --interval 5
 python3 processors/tag-visuals/tag.py work/tag-visuals/<job-folder>     # paid
 
 python3 processors/generate-copy/prepare.py input/interview.mov --platforms linkedin,tiktok --translate ne
 python3 processors/generate-copy/generate.py work/generate-copy/<job-folder>   # paid
+
+python3 processors/draft-report/prepare.py input/reports/2026-10.json
+python3 processors/draft-report/draft.py work/draft-report/<job-folder>       # paid
 ```
 
 ## Settings
@@ -235,6 +271,8 @@ Optional values in `.env` (see `.env.example`):
 | `OPENAI_REASONING_EFFORT`      | `none`       | tagging needs little reasoning; `unset` sends no setting |
 | `OPENAI_COPY_MODEL`            | vision model | text model for `/generate-copy`                          |
 | `OPENAI_COPY_REASONING_EFFORT` | `low`        | reasoning for copy; `unset` sends no setting             |
+| `OPENAI_REPORT_MODEL`          | vision model | text model for `/draft-report`                           |
+| `OPENAI_REPORT_REASONING_EFFORT` | `low`      | reasoning for reports; `unset` sends no setting          |
 
 ## Limits
 
@@ -243,6 +281,12 @@ Optional values in `.env` (see `.env.example`):
   part, not per sentence. The pinned server version always uses the `scribe_v2` model and
   writes sounds such as (laughter) into the text; `transcript.json` records both. Its
   success message names the input audio, not the transcript file.
+- Subtitle times are estimates. Only each part's start and end are measured; the cues
+  inside a part (a sentence, or a piece of a long one) share its time by their length, so
+  a pause inside a part shifts the cues after it. Shorter parts (`timestamps 15`) give
+  closer times; exact cue times need word timings, which the MCP tool does not return.
+  The `.vtt` says this in a NOTE line. Check subtitles against the video before
+  publishing.
 - With `speakers` and several parts, speaker numbers restart in each part.
 - `/generate-copy` soundbites name their sentence, but their times are those of the
   transcript part they are in (a short video is often one part), so an editor finds the
@@ -295,5 +339,18 @@ pass` skips the re-read, and so does `high detail`. Each text is marked `clear` 
 - People are tagged as "person" only; there is no face or identity recognition.
 - Works in Claude Code (terminal, or the Code tab of Claude Desktop). Claude Desktop's
   chat mode does not load project skills or `.mcp.json`.
+- `/draft-report` checks numbers, not meaning: a sentence can cite the right data and
+  still misread it. Each number must be in the month's data, and is flagged when it is
+  not in what its sentence cites (it may belong to another post); a number can still
+  match by chance within that data. The checker also flags ratios ("three times"),
+  claimed causes ("drove", "because", unless the sentence explains missing data),
+  internal terms ("engine", "snapshot") and jargon ("impressions"), rankings of posts
+  while some posts' numbers are incomplete, and, without earlier months, superlatives
+  ("strongest month", "so far") for the strategist, but cannot catch every wording.
+  Rankings of posts are worked out by prepare (the leaders per measure among posts with
+  complete data) and every "most" or "fewest" claim about a post is checked against
+  them, as far as the sentence's wording shows the measure. People
+  are never named, but nothing detects a name the model wrote anyway. Video plays are
+  D2's `views_count`, which counts plays, not people.
 - A failed transcription keeps the parts that succeeded (`"complete": false`);
   re-running needs `force` and pays for every part again.
