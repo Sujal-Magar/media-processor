@@ -1,0 +1,85 @@
+{
+  "month_period": "2026-10",
+  "previous_month": "2026-09",
+  "totals": {
+    "reach": { "current": 12000, "previous": 10000, "delta_pct": 20.0 },
+    "video_views": { "current": 9000, "previous": 8000, "delta_pct": 12.5 },
+    "engagement_rate": { "current": 5.0, "previous": 4.0, "delta_pct": 25.0 },
+    "new_followers": { "current": 40, "previous": 50, "delta_pct": -20.0 },
+    "link_clicks": null,
+    "enquiries": {
+      "current": 6,
+      "previous": 4,
+      "delta_pct": null,
+      "footnote": "Phone enquiries are not counted yet, so the change is not shown."
+    }
+  },
+  "platforms": {
+    "instagram": { "posts": 1, "reach": { "current": 8000, "previous": 6000, "delta_pct": 33.33 } },
+    "tiktok": { "posts": 1, "reach": { "current": 4000, "previous": 4000, "delta_pct": 0.0 } }
+  },
+  "highlights": {
+    "highest_reach": "ci-0001",
+    "highest_engagement": "ci-0001",
+    "best_retention": "ci-0002"
+  },
+  "next_month_plan": ["Two more short explainer videos.", "One post a week on TikTok."],
+  "earlier_months": [{ "month_period": "2026-08", "reach": 9000, "enquiries": 3 }],
+  "brand": {
+    "voice_pillars": ["Friendly", "Plain-spoken"],
+    "tone_rules": "Warm and clear, never pushy.",
+    "do_nots": ["Never promise an outcome."]
+  },
+  "audience": ["People thinking about studying abroad"],
+  "posts": [
+    {
+      "content_item_id": "ci-0001",
+      "platform": "instagram",
+      "post_url": "https://example.invalid/instagram/ci-0001",
+      "published_at": "2026-10-03",
+      "content_pillar": "Educational",
+      "language": "en",
+      "source_file": "interview.mov",
+      "hook_used": 1,
+      "snapshot": {
+        "platform": "instagram",
+        "snapshot_timestamp": "2026-10-31T23:59:00+00:00",
+        "views_count": 6000,
+        "reach_count": 8000,
+        "likes_count": 300,
+        "comments_count": 20,
+        "shares_count": 40,
+        "saves_count": 40,
+        "true_engagement_rate": 5.0,
+        "retention_3s_pct": 60.0,
+        "retention_10s_pct": 40.0,
+        "retention_complete_pct": 25.0,
+        "data_quality_flag": "Full"
+      }
+    },
+    {
+      "content_item_id": "ci-0002",
+      "platform": "tiktok",
+      "post_url": "https://example.invalid/tiktok/ci-0002",
+      "published_at": "2026-10-10",
+      "content_pillar": "Promo",
+      "language": "ne",
+      "title": "Short promo for the next intake",
+      "snapshot": {
+        "platform": "tiktok",
+        "snapshot_timestamp": "2026-10-31T23:59:00+00:00",
+        "views_count": 3000,
+        "reach_count": 4000,
+        "likes_count": 150,
+        "comments_count": 10,
+        "shares_count": null,
+        "saves_count": null,
+        "true_engagement_rate": null,
+        "retention_3s_pct": 55.0,
+        "retention_10s_pct": 35.0,
+        "retention_complete_pct": 30.0,
+        "data_quality_flag": "Partial"
+      }
+    }
+  ]
+}

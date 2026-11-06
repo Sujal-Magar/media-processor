@@ -107,3 +107,6 @@ vocabulary (reused only when they describe exactly what is visible), and each re
 after the first also sees what earlier requests for the same video answered. Truly new
 tags are marked `new` in `tags.json` and `(new)` in `tags.md`; with `force`, the file's own
 earlier tags are offered again but still count as new.
+Tags are English, lowercase, with words joined by hyphens (`speaking-to-camera`).
+Results saved before this rule still show spaces until tagged again with `force`, but
+count as the same tags in the library.

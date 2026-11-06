@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """transcribe, step 3: collect the transcript ElevenLabs saved for each part and write
-output/transcribe/<name>-<hash>/transcript.md, transcript.json and metadata.json.
+output/transcribe/<name>-<hash>/transcript.md, transcript.json and metadata.json, plus
+subtitles (transcript.vtt and transcript.srt, with estimated times; see subtitles.py).
 
 Prints only paths and counts, never the transcript, so the text stays out of the chat.
 
@@ -32,6 +33,8 @@ from lib.workspace import (
     write_text,
 )
 from servers.elevenlabs import PACKAGE, STT_AUDIO_EVENTS, STT_LOGGING, STT_MODEL
+from subtitles import FILES as SUBTITLE_FILES
+from subtitles import write_subtitles
 
 SPEAKER_LINE = re.compile(r"^(SPEAKER \w+):\s?(.*)$")
 # The MCP tool reports no model; the pinned server version fixes it (servers/elevenlabs.py).
@@ -170,7 +173,7 @@ def main() -> None:
     output_dir = Path(plan["output_dir"])
     files = ["transcript.md", "transcript.json", "metadata.json"]
     archived = archive_previous(
-        output_dir, "transcript.json", files, plan.get("replaces")
+        output_dir, "transcript.json", [*files, *SUBTITLE_FILES], plan.get("replaces")
     )
     document = {
         "version": 1,
@@ -199,6 +202,7 @@ def main() -> None:
     }
     write_json(output_dir / "transcript.json", document)
     write_text(output_dir / "transcript.md", to_markdown(plan, parts, complete))
+    cues, subtitles = write_subtitles(output_dir, document)
     write_json(
         output_dir / "metadata.json",
         result_metadata(plan, "complete" if complete else "incomplete"),
@@ -210,8 +214,10 @@ def main() -> None:
         {
             "status": "complete" if complete else "incomplete",
             "output_dir": str(output_dir),
-            "files": files,
+            "files": files + subtitles,
             "previous_result": str(archived) if archived else None,
+            # Cue times are estimated within each part (no word timings from the tool).
+            "subtitle_cues": cues,
             "parts_transcribed": done,
             "parts_total": len(parts),
             "characters": len(document["text"]),

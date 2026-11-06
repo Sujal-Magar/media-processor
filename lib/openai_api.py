@@ -32,6 +32,13 @@ def estimate_image_tokens(width: int, height: int, detail: str) -> int:
     return 85 + 170 * tiles
 
 
+def estimate_text_tokens(text: str) -> int:
+    """Rough input tokens for text: about 4 characters per token in English, 2 in other
+    scripts (Devanagari splits finer). An estimate: a model may count differently."""
+    ascii_chars = sum(c.isascii() for c in text)
+    return math.ceil(ascii_chars / 4 + (len(text) - ascii_chars) / 2)
+
+
 class OpenAIError(Exception):
     """An API failure with a short explanation that never contains the key."""
 
@@ -45,6 +52,51 @@ class OpenAIError(Exception):
 def setting(name: str, default: str | None = None) -> str | None:
     """A value from the shell, else from .env, else the default."""
     return os.environ.get(name, "").strip() or dotenv_value(name) or default
+
+
+def topic_model() -> str:
+    """The model tag-topics uses: OPENAI_TOPIC_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_TOPIC_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
+def copy_model() -> str:
+    """The model generate-copy uses: OPENAI_COPY_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_COPY_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
+def report_model() -> str:
+    """The model draft-report uses: OPENAI_REPORT_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_REPORT_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
+def translate_model() -> str:
+    """The model translate-subtitles uses: OPENAI_TRANSLATE_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_TRANSLATE_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
+
+
+def insight_model() -> str:
+    """The model draft-insights uses: OPENAI_INSIGHT_MODEL, else the tagging model."""
+    return (
+        setting("OPENAI_INSIGHT_MODEL")
+        or setting("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+        or DEFAULT_VISION_MODEL
+    )
 
 
 def request(

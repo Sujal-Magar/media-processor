@@ -46,6 +46,7 @@ from lib.openai_api import (
     request,
     setting,
 )
+from lib.tags import clean_label
 from lib.workspace import fail, is_job_dir, print_json, write_json
 
 # Pass 2 crops full-resolution frames: the 768 px tagging frames are too small for fine print.
@@ -83,18 +84,19 @@ usually look like: write "…" instead. Leave the list empty when there is no re
 text."""
 
 INSTRUCTIONS = f"""You tag frames from a video or photo library so it can be searched.
-For every frame, list what is clearly visible as short lowercase English tags:
+For every frame, list what is clearly visible as short English tags, lowercase, with
+words joined by hyphens:
 - object: physical things (person, laptop, microphone, car, dog)
 - scene: the setting (office, classroom, street, kitchen, outdoors, stage)
 - activity: what people are doing (presenting, typing, walking, cooking); use
-  "speaking to camera" when a person visibly talks to the camera
-- attribute: visual qualities (night, close-up, crowded, text on screen)
+  "speaking-to-camera" when a person visibly talks to the camera
+- attribute: visual qualities (night, close-up, crowded, text-on-screen)
 Use singular nouns or short phrases in plain English. The library may belong to any
 kind of organisation, so tag what you see rather than forcing a fixed list. When the
 message lists tags already used in this library, treat them as a vocabulary, not a
 checklist: use a listed tag only for something visible in this frame that it describes
 exactly, and then with its exact wording. A tag that names a colour, garment, posture or
-kind of object (white shirt, sitting, certificate) fits only when exactly that is
+kind of object (white-shirt, sitting, certificate) fits only when exactly that is
 visible; otherwise add a new tag that says what you see.
 Use "person" for people: never name or identify anyone, and do not guess age,
 ethnicity or emotions. Tag only what you can see.
@@ -207,7 +209,7 @@ def earlier_batches_text(results_dir: Path, batch: list[dict[str, Any]]) -> str 
             if frame["index"] >= first:
                 continue
             for tag in frame.get("tags", []):
-                tags[(tag["label"].strip().lower(), tag["category"])] += 1
+                tags[(clean_label(tag["label"]), tag["category"])] += 1
             for item in frame.get("on_screen_text", []):
                 text = item.get("text") if isinstance(item, dict) else item
                 if has_text(text or "") and (

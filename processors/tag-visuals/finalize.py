@@ -37,16 +37,14 @@ from lib.workspace import (
     write_text,
 )
 
+from lib.tags import clean_label
+
 CATEGORIES = ("object", "scene", "activity", "attribute")
 # Readings that differ by a misread letter or two (TELICHO / TILICHO) are one text.
 FUZZY_RATIO = 0.85
 FUZZY_MAX_DIGITS = 4
 HEADINGS = {"object": "Objects", "scene": "Scenes", "activity": "Activities",
             "attribute": "Attributes"}  # fmt: skip
-
-
-def clean_label(label: str) -> str:
-    return re.sub(r"\s+", " ", label.strip().lower())
 
 
 def clean_text(text: str) -> str:
@@ -582,7 +580,10 @@ def finalize(job_dir: Path, keep_work: bool = False) -> dict[str, Any]:
                 "time_seconds": frame["time_seconds"],
                 "file": Path(frame["file"]).name,
                 "summary": result.get("summary"),
-                "tags": result.get("tags", []),
+                "tags": [
+                    {**tag, "label": clean_label(tag["label"])}
+                    for tag in result.get("tags", [])
+                ],
                 "on_screen_text": result.get("on_screen_text", []),
                 # Pass 1 (low detail) saw text it could not read; text_reread says
                 # what the full-resolution re-read made of it.
@@ -598,7 +599,8 @@ def finalize(job_dir: Path, keep_work: bool = False) -> dict[str, Any]:
     document = {
         # 2: text items are {text, legibility, detail}, plus `confirmed: false` on pass-1
         # text a re-read of the frame did not read again; text_pass.status
-        "version": 2,
+        # 3: tag labels joined by hyphens (lib/tags.py)
+        "version": 3,
         "processor": plan["processor"],
         "complete": complete,
         # Machine-made tags awaiting human review; shown to clients meanwhile.

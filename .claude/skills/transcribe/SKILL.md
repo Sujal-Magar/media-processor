@@ -88,7 +88,9 @@ Run `python3 processors/transcribe/finalize.py <job_dir>` with `job_dir` from th
 output.
 
 Report back in a few lines: the output folder, the files written (`transcript.md`,
-`transcript.json`, `metadata.json`), parts transcribed out of total, where the replaced
+`transcript.json`, `metadata.json`, and the subtitles `transcript.vtt` and
+`transcript.srt` when there is speech, with `subtitle_cues`; say that their times are
+estimated within each part), parts transcribed out of total, where the replaced
 result went (`previous_result`, if set), and any warnings. If
 the status is `incomplete`, say which part failed and that re-running needs `force` (and
 is charged again for every part).
