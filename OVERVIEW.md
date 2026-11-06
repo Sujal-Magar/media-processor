@@ -14,7 +14,7 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 - `/tag-visuals`: what is visible (objects, scenes, activities, attributes) and readable on-screen text, with time ranges, using an **OpenAI** vision model.
 - `/tag-topics`: what a file is about (type, topics, named things), each tag citing its evidence, from the transcript and visual tags.
 - `/generate-copy`: draft copy from the same results: 3–5 hooks, an edit script (soundbites and B-roll with their times), a caption per platform, hashtags and an optional translation (e.g. Nepali).
-- `/translate-subtitles`: English-only and Nepali-only subtitle tracks from the mixed-language ones, cue for cue with the same times.
+- `/translate-subtitles`: from the mixed Nepali-English subtitles, three tracks with the same cue times: Nepali (every Nepali word as said, the English words translated), Nepali as spoken (all in Devanagari, the English words written by their sound) and English (translated cue by cue).
 - `/draft-report`: the narrative of a client's monthly report (headline, three short paragraphs, top post, highlight and tile lines, next month's plan in the client's words) from that month's numbers, each sentence citing its data and every number checked against it. The numbers are mocked until Pulse's analytics exist.
 - `/process-video`: runs transcription and visual tagging on one video at the same time, then topics.
 
@@ -29,7 +29,8 @@ A repo you open in **Claude Code**. It turns a media file into searchable result
 | Content-agnostic **processors**                                  | Each task is one folder plus one skill. Adding one doesn't touch the others.                                                                                                            |
 | Free-form tags that reuse existing tags                          | Any organisation can use it, while the model reuses the folder's existing wording, so "laptop" doesn't become "notebook". New tags are flagged.                                         |
 | Topics and copy work from results, not the file                  | One cheap text request each. Every tag, hook and soundbite cites the footage it rests on, so a reviewer can check it.                                                                   |
-| The organisation's name comes from `organisation.json`           | Speech-to-text can mishear it (it wrote the municipality "Tilottama" for "Tilicho"). Topics and copy use the spelling in this file.                                                     |
+| The organisation's name comes from `organisation.json`           | Speech-to-text can mishear it (it wrote the municipality "Tilottama" for "Tilicho"). Topics, copy and subtitles use the spelling in this file; `heard_as` lists the misheard forms.     |
+| Nepali subtitle tracks are put together by code, not the model   | Asked to keep what was said, the model still reworded about one Nepali word in five. Now only the English words go to the model; every Nepali word is copied from the transcript.       |
 | Report numbers are given to the model, never left to it          | The model only words the month: every number it writes is checked against the data its sentence cites, and rankings of posts are worked out by prepare, not by the model.               |
 | Report data is mocked for now                                    | Pulse's analytics (C15) and report compilation (C17a) don't exist yet, so `input/reports/<month>.json` stands in for them, in the shape their documents define.                         |
 
@@ -57,9 +58,12 @@ input/<file>
   │                  → generate.py: one OpenAI text request
   │                  → finalize.py → output/generate-copy/<name>-<hash>/copy.md, .json
   │
-  └─ /translate-subtitles: prepare.py (the transcript's subtitle cues, organisation.json)
-                     → translate.py: one OpenAI text request (every cue, each language)
-                     → finalize.py → output/translate-subtitles/<name>-<hash>/
+  └─ /translate-subtitles: prepare.py (the transcript's subtitle cues; the English words
+                     inside Nepali cues, and misheard name forms, as spans)
+                     → translate.py: one OpenAI text request (each span translated and
+                       written by its sound; each whole cue in English)
+                     → finalize.py (Nepali cues put back together with the spans)
+                     → output/translate-subtitles/<name>-<hash>/
                        transcript.en, transcript.ne and transcript.ne-spoken (.vtt, .srt)
 
 input/reports/<month>.json
@@ -82,7 +86,8 @@ Each processor follows the same pattern: **prepare (free, local) → paid step �
 - Silent audio and audio-only files are skipped for free.
 - Partial results are kept. An interrupted tagging run resumes and pays only for what's missing.
 - Claude cannot read `.env` (the keys). Scripts print counts and paths, not transcripts, tags or copy.
-- People are never named in topics, copy or reports. Copy and reports are drafts (`review_status: draft`) and are never published or sent.
+- People are never named in topics, copy or reports. Copy, reports and translated subtitles are drafts (`review_status: draft`) and are never published or sent.
+- Subtitles keep what was said, names included; the translated tracks are for a speaker of each language to check before publishing.
 
 ## Layout
 
@@ -98,7 +103,7 @@ lib/                   media.py (FFmpeg), workspace.py (paths, files), openai_ap
 fixtures/              example inputs (report-input.example.json)
 servers/elevenlabs.py  starts the ElevenLabs MCP server (.mcp.json)
 scripts/check_setup.py free environment and key checks
-organisation.json      the organisation's name, website, hashtags (git-ignored)
+organisation.json      the organisation's name, website, hashtags, misheard forms (git-ignored)
 input/ work/ output/   files to be processed (input/reports/: a month's numbers), temporary
                        jobs, results (all git-ignored)
 ```
